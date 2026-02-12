@@ -1,5 +1,5 @@
 import { http } from './http'
-import type { CreateEventInput, EducationTopic, Event, NewsArticle, Official } from '../types'
+import type { CreateEventInput, EducationTopic, Event, NewsArticle, Politician } from '../types'
 
 export function listNews(params?: { q?: string; limit?: number; officialId?: string }) {
   const sp = new URLSearchParams()
@@ -25,18 +25,16 @@ export function createEvent(input: CreateEventInput) {
 export function listOfficials(params?: {
   q?: string
   level?: string
-  areaServed?: string
 }) {
   const sp = new URLSearchParams()
   if (params?.q) sp.set('q', params.q)
   if (params?.level) sp.set('level', params.level)
-  if (params?.areaServed) sp.set('areaServed', params.areaServed)
   const qs = sp.toString()
-  return http<Official[]>(`/api/officials${qs ? `?${qs}` : ''}`)
+  return http<Politician[]>(`/api/officials${qs ? `?${qs}` : ''}`)
 }
 
 export function getOfficial(officialId: string) {
-  return http<Official>(`/api/officials/${encodeURIComponent(officialId)}`)
+  return http<Politician>(`/api/officials/${encodeURIComponent(officialId)}`)
 }
 
 export function listEducation() {

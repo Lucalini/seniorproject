@@ -29,16 +29,14 @@ export type CreateEventInput = {
   link?: string
 }
 
-export type Official = {
+export type Politician = {
   id: string
   name: string
-  roleTitle: string
-  areaServed: string
-  level?: 'city' | 'county' | 'state' | 'federal' | 'other'
-  officeAddress?: string
+  imageObjectId?: string
+  bio?: string
+  level?: string
   phone?: string
   email?: string
-  website?: string
 }
 
 export type EducationTopic = {

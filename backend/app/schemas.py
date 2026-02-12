@@ -54,6 +54,16 @@ class Official(ApiModel):
     website: str | None = None
 
 
+class Politician(ApiModel):
+    id: str
+    name: str
+    image_object_id: str | None = Field(default=None, alias="imageObjectId")
+    bio: str | None = None
+    level: str | None = None
+    phone: str | None = None
+    email: str | None = None
+
+
 class EducationTopic(ApiModel):
     id: str
     title: str

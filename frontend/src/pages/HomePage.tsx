@@ -60,7 +60,7 @@ export function HomePage() {
 
       {!hasData ? (
         <div className="colSpan2">
-          <Loading label="Loading POLI(SLO)…" />
+          <Loading label="Loading POLI…" />
         </div>
       ) : (
         <>

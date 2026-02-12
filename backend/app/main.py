@@ -7,8 +7,9 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .data import EDUCATION, EVENTS, NEWS, OFFICIALS
-from .schemas import CreateEventInput, EducationTopic, Event, NewsArticle, Official
+from .data import EDUCATION, EVENTS, NEWS
+from .schemas import CreateEventInput, EducationTopic, Event, NewsArticle, Politician
+from .supabase_repo import get_politician, list_politicians
 
 app = FastAPI(title=settings.app_name)
 
@@ -97,43 +98,24 @@ def post_event(payload: CreateEventInput):
     return created
 
 
-@app.get("/api/officials", response_model=list[Official])
+@app.get("/api/officials", response_model=list[Politician])
 def get_officials(
     q: str | None = None,
     level: str | None = None,
-    areaServed: str | None = None,  # camelCase for the frontend
     limit: int = Query(default=200, ge=1, le=1000),
 ):
-    items = OFFICIALS
-
-    if level:
-        lv = level.strip().lower()
-        items = [o for o in items if (o.level or "").lower() == lv]
-
-    if areaServed:
-        needle = areaServed.strip().lower()
-        items = [o for o in items if needle in o.area_served.lower()]
-
-    if q:
-        needle = q.strip().lower()
-        items = [
-            o
-            for o in items
-            if needle in o.name.lower()
-            or needle in o.role_title.lower()
-            or needle in o.area_served.lower()
-        ]
-
-    items = sorted(items, key=lambda o: (o.level or "", o.name))
-    return items[:limit]
+    # Supabase `politicians` table (id/name/image_object_id/bio/level/phone/email)
+    items = list_politicians(q=q, level=level, limit=limit)
+    # Pydantic will serialize `image_object_id` as `imageObjectId`
+    return [Politician.model_validate(x) for x in items]
 
 
-@app.get("/api/officials/{official_id}", response_model=Official)
+@app.get("/api/officials/{official_id}", response_model=Politician)
 def get_official(official_id: str):
-    for o in OFFICIALS:
-        if o.id == official_id:
-            return o
-    raise HTTPException(status_code=404, detail="Official not found")
+    row = get_politician(official_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Official not found")
+    return Politician.model_validate(row)
 
 
 @app.get("/api/education", response_model=list[EducationTopic])

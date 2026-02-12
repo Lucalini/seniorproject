@@ -4,12 +4,12 @@ import { getOfficial, listNews } from '../api/poli'
 import { Card } from '../components/Card'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Loading } from '../components/Loading'
-import type { NewsArticle, Official } from '../types'
+import type { NewsArticle, Politician } from '../types'
 import { errorMessage } from '../utils/errors'
 
 export function OfficialDetailPage() {
   const { officialId } = useParams()
-  const [official, setOfficial] = useState<Official | null>(null)
+  const [official, setOfficial] = useState<Politician | null>(null)
   const [news, setNews] = useState<NewsArticle[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -18,7 +18,8 @@ export function OfficialDetailPage() {
     setError(null)
     setOfficial(null)
     setNews(null)
-    Promise.all([getOfficial(officialId), listNews({ officialId, limit: 10 })])
+    // We don't yet have article→politician linking in Supabase; show general recent news for now.
+    Promise.all([getOfficial(officialId), listNews({ limit: 10 })])
       .then(([o, n]) => {
         setOfficial(o)
         setNews(n)
@@ -38,22 +39,16 @@ export function OfficialDetailPage() {
         </div>
         <h1 className="pageTitle">{official.name}</h1>
         <p className="pageSubtitle">
-          {official.roleTitle} · <span className="muted">{official.areaServed}</span>
+          {official.level ? <span className="pill pillSoft">{official.level}</span> : <span className="muted">No level set</span>}
         </p>
       </div>
 
+      <Card title="Bio">
+        {official.bio ? <div className="muted">{official.bio}</div> : <div className="muted">No bio yet.</div>}
+      </Card>
+
       <Card title="Contact">
         <div className="stack">
-          {official.website ? (
-            <div>
-              <span className="muted">Website</span>
-              <div>
-                <a href={official.website} target="_blank" rel="noreferrer">
-                  {official.website}
-                </a>
-              </div>
-            </div>
-          ) : null}
           {official.email ? (
             <div>
               <span className="muted">Email</span>
@@ -70,13 +65,13 @@ export function OfficialDetailPage() {
               </div>
             </div>
           ) : null}
-          {official.officeAddress ? (
+          {official.imageObjectId ? (
             <div>
-              <span className="muted">Office</span>
-              <div>{official.officeAddress}</div>
+              <span className="muted">Supabase image object id</span>
+              <div className="muted">{official.imageObjectId}</div>
             </div>
           ) : null}
-          {!official.website && !official.email && !official.phone && !official.officeAddress ? (
+          {!official.email && !official.phone && !official.imageObjectId ? (
             <div className="muted">No contact info yet.</div>
           ) : null}
         </div>

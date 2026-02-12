@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import poliMustang from '../assets/POLIMustang.JPG'
 
 type Props = {
   children: ReactNode
@@ -16,10 +17,10 @@ export function AppShell({ children }: Props) {
         <div className="appHeaderInner">
           <div className="brand">
             <div className="brandMark" aria-hidden="true">
-              POLI
+              <img className="brandMarkImg" src={poliMustang} alt="" />
             </div>
             <div className="brandText">
-              <div className="brandTitle">POLI(SLO)</div>
+              <div className="brandTitle">POLI</div>
               <div className="brandSubtitle">San Luis Obispo County political hub</div>
             </div>
           </div>
