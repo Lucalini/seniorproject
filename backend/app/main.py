@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 from datetime import timezone
-from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .data import EDUCATION, EVENTS, NEWS
+from .data import EDUCATION, NEWS
+from .geocoding import geocode_address
 from .schemas import CreateEventInput, EducationTopic, Event, NewsArticle, Politician
-from .supabase_repo import get_politician, list_politicians
+from .supabase_repo import (
+    create_event,
+    get_politician,
+    list_events,
+    list_politicians,
+)
 
 app = FastAPI(title=settings.app_name)
 
@@ -60,42 +65,48 @@ def get_news(
 def get_events(
     q: str | None = None,
     limit: int = Query(default=50, ge=1, le=500),
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    organizerId: str | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
+    radius: float = Query(default=50_000, ge=1, description="Search radius in meters"),
 ):
-    items = EVENTS
-    if q:
-        needle = q.strip().lower()
-        items = [
-            e
-            for e in items
-            if needle in e.title.lower()
-            or (e.location_name and needle in e.location_name.lower())
-            or (e.address and needle in e.address.lower())
-            or (e.description and needle in e.description.lower())
-        ]
-
-    items = sorted(items, key=lambda e: e.starts_at)
-    return items[:limit]
+    rows = list_events(
+        q=q,
+        from_date=fromDate,
+        to_date=toDate,
+        organizer_id=organizerId,
+        lat=lat,
+        lng=lng,
+        radius_meters=radius,
+        limit=limit,
+    )
+    return [Event.model_validate(r) for r in rows]
 
 
 @app.post("/api/events", response_model=Event, status_code=201)
 def post_event(payload: CreateEventInput):
-    # Normalize to an aware datetime for consistent ISO serialization
-    starts = payload.starts_at
-    if starts.tzinfo is None:
-        starts = starts.replace(tzinfo=timezone.utc)
+    try:
+        lat, lng = geocode_address(payload.address)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
-    created = Event(
-        id=str(uuid4()),
+    dt = payload.event_datetime
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    row = create_event(
         title=payload.title.strip(),
-        starts_at=starts,
-        location_name=(payload.location_name.strip() if payload.location_name else None),
-        address=(payload.address.strip() if payload.address else None),
-        description=(payload.description.strip() if payload.description else None),
-        link=(payload.link.strip() if payload.link else None),
-        created_by="community",
+        description=payload.description.strip(),
+        event_datetime=dt.isoformat(),
+        address=payload.address.strip(),
+        latitude=lat,
+        longitude=lng,
+        image_path=payload.image_path.strip(),
+        organizer_id=payload.organizer_id,
     )
-    EVENTS.insert(0, created)
-    return created
+    return Event.model_validate(row)
 
 
 @app.get("/api/officials", response_model=list[Politician])

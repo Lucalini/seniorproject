@@ -23,23 +23,25 @@ class NewsArticle(ApiModel):
 
 
 class Event(ApiModel):
-    id: str
+    uuid: str
+    organizer_id: str | None = Field(default=None, alias="organizerId")
+    image_path: str = Field(..., alias="imagePath")
     title: str
-    starts_at: datetime = Field(..., alias="startsAt")
-    location_name: str | None = Field(default=None, alias="locationName")
-    address: str | None = None
-    description: str | None = None
-    link: str | None = None
-    created_by: Literal["community", "imported"] | None = Field(default=None, alias="createdBy")
+    description: str
+    event_datetime: datetime = Field(..., alias="datetime")
+    address: str
+    latitude: float | None = None
+    longitude: float | None = None
+    distance_meters: float | None = Field(default=None, alias="distanceMeters")
 
 
 class CreateEventInput(ApiModel):
     title: str = Field(min_length=3, max_length=140)
-    starts_at: datetime = Field(..., alias="startsAt")
-    location_name: str | None = Field(default=None, alias="locationName", max_length=140)
-    address: str | None = Field(default=None, max_length=240)
-    description: str | None = Field(default=None, max_length=2000)
-    link: str | None = Field(default=None, max_length=500)
+    description: str = Field(max_length=2000)
+    event_datetime: datetime = Field(..., alias="datetime")
+    address: str = Field(max_length=500)
+    image_path: str = Field(default="events/default.png", alias="imagePath")
+    organizer_id: str | None = Field(default=None, alias="organizerId")
 
 
 class Official(ApiModel):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from .schemas import EducationTopic, Event, NewsArticle, Official
+from .schemas import EducationTopic, NewsArticle, Official
 
 
 def _utc_now() -> datetime:
@@ -51,26 +51,6 @@ NEWS: list[NewsArticle] = [
         summary="Next step: ingest agendas/minutes and link them to events + officials.",
         tags=["city", "agenda"],
         related_official_ids=["slo-city-council"],
-    ),
-]
-
-EVENTS: list[Event] = [
-    Event(
-        id="example-event-1",
-        title="Example: Board of Supervisors meeting",
-        starts_at=_utc_now() + timedelta(days=3, hours=2),
-        location_name="County Government Center",
-        address="San Luis Obispo, CA",
-        description="Placeholder event. Later: import from official calendars/agendas.",
-        created_by="imported",
-    ),
-    Event(
-        id="example-event-2",
-        title="Example: Community canvass",
-        starts_at=_utc_now() + timedelta(days=6, hours=1),
-        location_name="Downtown SLO",
-        description="Community-submitted example.",
-        created_by="community",
     ),
 ]
 
