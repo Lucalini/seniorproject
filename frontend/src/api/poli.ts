@@ -1,4 +1,5 @@
 import { http } from './http'
+import { postgrest } from './postgrest'
 import type { CreateEventInput, EducationTopic, Event, NewsArticle, Politician } from '../types'
 
 export function listNews(params?: { q?: string; limit?: number; officialId?: string }) {
@@ -12,13 +13,24 @@ export function listNews(params?: { q?: string; limit?: number; officialId?: str
 
 export function listEvents(params?: { q?: string; limit?: number }) {
   const sp = new URLSearchParams()
-  if (params?.q) sp.set('q', params.q)
+  // Field aliasing keeps the frontend in camelCase.
+  sp.set('select', 'uuid,title,description,datetime,address,imagePath:image_path,organizerId:organizer_id')
+  sp.set('order', 'datetime.asc')
   if (params?.limit) sp.set('limit', String(params.limit))
-  const qs = sp.toString()
-  return http<Event[]>(`/api/events${qs ? `?${qs}` : ''}`)
+  // Upcoming only (optional)
+  sp.set('datetime', `gte.${new Date().toISOString()}`)
+
+  if (params?.q?.trim()) {
+    const needle = params.q.trim().replaceAll('*', '') // basic safety
+    // Match title OR description OR address
+    sp.set('or', `(title.ilike.*${needle}*,description.ilike.*${needle}*,address.ilike.*${needle}*)`)
+  }
+
+  return postgrest<Event[]>(`/rest/v1/events?${sp.toString()}`)
 }
 
 export function createEvent(input: CreateEventInput) {
+  // Use the existing backend endpoint to geocode + create geo point via RPC.
   return http<Event>('/api/events', { method: 'POST', body: input })
 }
 

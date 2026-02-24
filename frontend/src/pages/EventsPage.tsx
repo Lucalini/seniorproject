@@ -24,11 +24,10 @@ export function EventsPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<CreateEventInput>({
     title: '',
-    startsAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-    locationName: '',
+    datetime: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
     address: '',
     description: '',
-    link: '',
+    imagePath: 'events/default.png',
   })
 
   useEffect(() => {
@@ -55,17 +54,15 @@ export function EventsPage() {
       const created = await createEvent({
         ...form,
         title: form.title.trim(),
-        locationName: form.locationName?.trim() || undefined,
-        address: form.address?.trim() || undefined,
-        description: form.description?.trim() || undefined,
-        link: form.link?.trim() || undefined,
+        address: form.address.trim(),
+        description: form.description.trim(),
+        imagePath: form.imagePath?.trim() || 'events/default.png',
       })
       setEvents((prev) => [created, ...(prev ?? [])])
       setForm((f) => ({
         ...f,
         title: '',
         description: '',
-        link: '',
       }))
     } catch (e: unknown) {
       setError(errorMessage(e))
@@ -115,45 +112,28 @@ export function EventsPage() {
               <span className="fieldLabel">Date / time</span>
               <input
                 type="datetime-local"
-                value={formatDateTimeLocalInput(form.startsAt)}
+                value={formatDateTimeLocalInput(form.datetime)}
                 onChange={(e) => {
                   const dt = e.target.value
                   const iso = dt ? new Date(dt).toISOString() : new Date().toISOString()
-                  setForm((f) => ({ ...f, startsAt: iso }))
+                  setForm((f) => ({ ...f, datetime: iso }))
                 }}
                 required
               />
             </label>
-            <div className="row2">
-              <label className="field">
-                <span className="fieldLabel">Location name</span>
-                <input
-                  value={form.locationName ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, locationName: e.target.value }))}
-                  placeholder="e.g. SLO Library, Zoom"
-                />
-              </label>
-              <label className="field">
-                <span className="fieldLabel">Address</span>
-                <input
-                  value={form.address ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  placeholder="Optional"
-                />
-              </label>
-            </div>
             <label className="field">
-              <span className="fieldLabel">Link</span>
+              <span className="fieldLabel">Address</span>
               <input
-                value={form.link ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
-                placeholder="Optional (Eventbrite/Zoom/agenda link)"
+                value={form.address}
+                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                placeholder="Street address"
+                required
               />
             </label>
             <label className="field">
               <span className="fieldLabel">Description</span>
               <textarea
-                value={form.description ?? ''}
+                value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="Optional"
                 rows={4}
@@ -176,22 +156,14 @@ export function EventsPage() {
           ) : (
             <div className="list">
               {filtered.map((e) => (
-                <div key={e.id} className="listRow">
+                <div key={e.uuid} className="listRow">
                   <div className="listMain">
                     <div className="listTitle">{e.title}</div>
                     <div className="listMeta">
-                      <span className="pill">{new Date(e.startsAt).toLocaleString()}</span>
-                      {e.locationName ? <span className="muted">{e.locationName}</span> : null}
-                      {e.createdBy ? <span className="pill pillSoft">{e.createdBy}</span> : null}
+                      <span className="pill">{new Date(e.datetime).toLocaleString()}</span>
+                      {e.address ? <span className="muted">{e.address}</span> : null}
                     </div>
                     {e.description ? <div className="muted">{e.description}</div> : null}
-                    {e.link ? (
-                      <div>
-                        <a href={e.link} target="_blank" rel="noreferrer">
-                          Event link
-                        </a>
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               ))}

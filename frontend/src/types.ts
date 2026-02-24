@@ -10,23 +10,22 @@ export type NewsArticle = {
 }
 
 export type Event = {
-  id: string
+  uuid: string
   title: string
-  startsAt: string // ISO
-  locationName?: string
-  address?: string
+  datetime: string // ISO
+  address: string
   description?: string
-  link?: string
-  createdBy?: 'community' | 'imported'
+  imagePath?: string
+  organizerId?: string
 }
 
 export type CreateEventInput = {
   title: string
-  startsAt: string // ISO
-  locationName?: string
-  address?: string
-  description?: string
-  link?: string
+  datetime: string // ISO
+  address: string
+  description: string
+  imagePath?: string
+  organizerId?: string
 }
 
 export type Politician = {
