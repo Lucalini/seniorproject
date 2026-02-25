@@ -1,4 +1,14 @@
-import { HttpError } from './http'
+export class HttpError extends Error {
+  status: number
+  body?: unknown
+
+  constructor(message: string, status: number, body?: unknown) {
+    super(message)
+    this.name = 'HttpError'
+    this.status = status
+    this.body = body
+  }
+}
 
 function getSupabaseUrl() {
   const env = import.meta.env as unknown as Record<string, unknown>
@@ -18,7 +28,7 @@ function hasMessage(x: unknown): x is { message: unknown } {
   return typeof x === 'object' && x !== null && 'message' in x
 }
 
-export async function postgrest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function supabaseFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const url = `${getSupabaseUrl()}${path.startsWith('/') ? '' : '/'}${path}`
 
   const headers = new Headers(init.headers)
@@ -37,5 +47,14 @@ export async function postgrest<T>(path: string, init: RequestInit = {}): Promis
   }
 
   return parsed as T
+}
+
+export async function postgrest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return supabaseFetch<T>(path, init)
+}
+
+export async function supabaseFunction<T>(name: string, init: RequestInit = {}): Promise<T> {
+  const fnPath = `/functions/v1/${encodeURIComponent(name)}`
+  return supabaseFetch<T>(fnPath, init)
 }
 

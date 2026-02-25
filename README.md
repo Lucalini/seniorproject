@@ -1,23 +1,11 @@
 # POLI(SLO)
 
-A starter full‑stack web app for **San Luis Obispo County political content**:
+A web app for **San Luis Obispo County political content**:
 
 - **Frontend**: React + TypeScript (Vite)
-- **Backend**: Python (FastAPI)
+- **Backend**: Supabase (PostgREST + Edge Functions)
 
 ## Local dev
-
-### Backend (FastAPI)
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-Open `http://localhost:8000/healthz`.
 
 ### Frontend (React)
 
@@ -28,6 +16,24 @@ npm run dev
 ```
 
 Open the app at `http://localhost:5173`.
+
+## Supabase setup
+
+The frontend calls Supabase directly:
+
+- PostgREST routes under `/rest/v1/*`
+- Edge Functions under `/functions/v1/*`
+
+Required frontend env vars:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Deploy the event creation function (geocodes + calls `create_event` RPC):
+
+```bash
+supabase functions deploy create-event-geocoded --no-verify-jwt
+```
 
 ## What’s implemented (matches your wireframes)
 

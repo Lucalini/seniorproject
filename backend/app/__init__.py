@@ -1,2 +1,0 @@
-# POLI(SLO) backend package
-

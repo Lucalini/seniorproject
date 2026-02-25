@@ -77,3 +77,27 @@ Notes:
 - Cron is UTC and daylight-savings will shift the local time unless you adjust the schedule.
 - The function dedupes by `(title, address)` before inserting (only one row per Mobilize event).
 
+---
+
+## Supabase Edge Function: create-event-geocoded
+
+The frontend event form now calls an Edge Function (`create-event-geocoded`) instead of FastAPI.
+
+What it does:
+
+- Accepts event payload (`title`, `datetime`, `address`, `description`, optional `imagePath` and `organizerId`)
+- Geocodes the address via Nominatim
+- Calls the `create_event` RPC in Postgres
+- Returns the created event in frontend shape (`uuid`, `title`, `datetime`, `address`, `description`, `imagePath`, `organizerId`)
+
+Deploy:
+
+```bash
+supabase functions deploy create-event-geocoded --no-verify-jwt
+```
+
+Required function secrets:
+
+- `URL`
+- `SERVICE_ROLE_KEY`
+

@@ -111,19 +111,8 @@ async function fetchAllMobilizeEvents(opts: {
   return out;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (_req) => {
   try {
-    const cronSecret = Deno.env.get("MOBILIZE_CRON_SECRET");
-    if (cronSecret) {
-      const got = req.headers.get("x-cron-secret");
-      if (got !== cronSecret) {
-        return new Response(JSON.stringify({ error: "unauthorized" }), {
-          status: 401,
-          headers: { "content-type": "application/json" },
-        });
-      }
-    }
-
     const supabaseUrl = requiredEnv("URL");
     const serviceKey = requiredEnv("SERVICE_ROLE_KEY");
 
