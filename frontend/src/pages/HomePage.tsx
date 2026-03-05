@@ -87,12 +87,12 @@ export function HomePage() {
           <Card title="Upcoming events">
             <div className="list">
               {(events ?? []).map((e) => (
-                <div key={e.id} className="listRow">
+                <div key={e.uuid} className="listRow">
                   <div className="listMain">
                     <div className="listTitle">{e.title}</div>
                     <div className="listMeta">
-                      <span className="pill">{formatDateTime(e.startsAt)}</span>
-                      {e.locationName ? <span className="muted">{e.locationName}</span> : null}
+                      <span className="pill">{formatDateTime(e.datetime)}</span>
+                      {e.address ? <span className="muted">{e.address}</span> : null}
                     </div>
                   </div>
                 </div>

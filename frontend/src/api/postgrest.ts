@@ -28,13 +28,13 @@ function hasMessage(x: unknown): x is { message: unknown } {
   return typeof x === 'object' && x !== null && 'message' in x
 }
 
-export async function supabaseFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function supabaseFetch<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
   const url = `${getSupabaseUrl()}${path.startsWith('/') ? '' : '/'}${path}`
 
   const headers = new Headers(init.headers)
   if (!headers.has('accept')) headers.set('accept', 'application/json')
   if (!headers.has('apikey')) headers.set('apikey', getSupabaseAnonKey())
-  if (!headers.has('authorization')) headers.set('authorization', `Bearer ${getSupabaseAnonKey()}`)
+  headers.set('authorization', `Bearer ${accessToken ?? getSupabaseAnonKey()}`)
 
   const res = await fetch(url, { ...init, headers })
   const contentType = res.headers.get('content-type') ?? ''
@@ -49,12 +49,12 @@ export async function supabaseFetch<T>(path: string, init: RequestInit = {}): Pr
   return parsed as T
 }
 
-export async function postgrest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  return supabaseFetch<T>(path, init)
+export async function postgrest<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
+  return supabaseFetch<T>(path, init, accessToken)
 }
 
-export async function supabaseFunction<T>(name: string, init: RequestInit = {}): Promise<T> {
+export async function supabaseFunction<T>(name: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
   const fnPath = `/functions/v1/${encodeURIComponent(name)}`
-  return supabaseFetch<T>(fnPath, init)
+  return supabaseFetch<T>(fnPath, init, accessToken)
 }
 

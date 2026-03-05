@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import poliMustang from '../assets/POLIMustang.JPG'
+import { useAuth } from './AuthProvider'
 
 type Props = {
   children: ReactNode
@@ -11,6 +12,8 @@ function cx(...parts: Array<string | false | null | undefined>) {
 }
 
 export function AppShell({ children }: Props) {
+  const { user, loading, signOut } = useAuth()
+
   return (
     <div className="app">
       <header className="appHeader">
@@ -51,6 +54,24 @@ export function AppShell({ children }: Props) {
             >
               Education
             </NavLink>
+
+            {!loading && (
+              user ? (
+                <div className="navUser">
+                  <span className="navUserEmail">{user.email}</span>
+                  <button type="button" className="navLogout" onClick={() => signOut()}>
+                    Log out
+                  </button>
+                </div>
+              ) : (
+                <NavLink
+                  to="/login"
+                  className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
+                >
+                  Log in
+                </NavLink>
+              )
+            )}
           </nav>
         </div>
       </header>

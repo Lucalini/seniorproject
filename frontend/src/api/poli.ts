@@ -1,6 +1,6 @@
 import { HttpError, postgrest, supabaseFunction } from './postgrest'
 import { EDUCATION_SEED, NEWS_SEED } from './seeds'
-import type { CreateEventInput, EducationTopic, Event, NewsArticle, Politician } from '../types'
+import type { CreateEventInput, Event, Politician } from '../types'
 
 export function listNews(params?: { q?: string; limit?: number; officialId?: string }) {
   const needle = params?.q?.trim().toLowerCase()
@@ -23,30 +23,27 @@ export function listNews(params?: { q?: string; limit?: number; officialId?: str
   return Promise.resolve(items.slice(0, params?.limit ?? 25))
 }
 
-export function listEvents(params?: { q?: string; limit?: number }) {
+export function listEvents(params?: { q?: string; limit?: number }, accessToken?: string) {
   const sp = new URLSearchParams()
-  // Field aliasing keeps the frontend in camelCase.
   sp.set('select', 'uuid,title,description,datetime,address,imagePath:image_path,organizerId:organizer_id')
   sp.set('order', 'datetime.asc')
   if (params?.limit) sp.set('limit', String(params.limit))
-  // Upcoming only (optional)
   sp.set('datetime', `gte.${new Date().toISOString()}`)
 
   if (params?.q?.trim()) {
-    const needle = params.q.trim().replaceAll('*', '') // basic safety
-    // Match title OR description OR address
+    const needle = params.q.trim().replaceAll('*', '')
     sp.set('or', `(title.ilike.*${needle}*,description.ilike.*${needle}*,address.ilike.*${needle}*)`)
   }
 
-  return postgrest<Event[]>(`/rest/v1/events?${sp.toString()}`)
+  return postgrest<Event[]>(`/rest/v1/events?${sp.toString()}`, {}, accessToken)
 }
 
-export function createEvent(input: CreateEventInput) {
+export function createEvent(input: CreateEventInput, accessToken?: string) {
   return supabaseFunction<Event>('create-event-geocoded', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
-  })
+  }, accessToken)
 }
 
 export function listOfficials(params?: {

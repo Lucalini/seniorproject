@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { createEvent, listEvents } from '../api/poli'
+import { useAuth } from '../components/AuthProvider'
 import { Card } from '../components/Card'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Loading } from '../components/Loading'
@@ -18,6 +20,7 @@ function formatDateTimeLocalInput(iso?: string) {
 }
 
 export function EventsPage() {
+  const { user, session } = useAuth()
   const [events, setEvents] = useState<Event[] | null>(null)
   const [q, setQ] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -31,17 +34,17 @@ export function EventsPage() {
   })
 
   useEffect(() => {
-    listEvents({ limit: 50 })
+    listEvents({ limit: 50 }, session?.access_token)
       .then(setEvents)
       .catch((e: unknown) => setError(errorMessage(e)))
-  }, [])
+  }, [session])
 
   const filtered = useMemo(() => {
     const all = events ?? []
     const needle = q.trim().toLowerCase()
     if (!needle) return all
     return all.filter((e) => {
-      const hay = `${e.title} ${e.locationName ?? ''} ${e.address ?? ''} ${e.description ?? ''}`.toLowerCase()
+      const hay = `${e.title} ${e.address ?? ''} ${e.description ?? ''}`.toLowerCase()
       return hay.includes(needle)
     })
   }, [events, q])
@@ -57,7 +60,7 @@ export function EventsPage() {
         address: form.address.trim(),
         description: form.description.trim(),
         imagePath: form.imagePath?.trim() || 'events/default.png',
-      })
+      }, session?.access_token)
       setEvents((prev) => [created, ...(prev ?? [])])
       setForm((f) => ({
         ...f,
@@ -97,55 +100,64 @@ export function EventsPage() {
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. board meeting, Paso Robles, housing" />
           </label>
 
-          <form onSubmit={onSubmit} className="stack">
-            <div className="sectionTitle">Scheduling an event</div>
-            <label className="field">
-              <span className="fieldLabel">Title</span>
-              <input
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder="e.g. SLO City Council meeting watch party"
-                required
-              />
-            </label>
-            <label className="field">
-              <span className="fieldLabel">Date / time</span>
-              <input
-                type="datetime-local"
-                value={formatDateTimeLocalInput(form.datetime)}
-                onChange={(e) => {
-                  const dt = e.target.value
-                  const iso = dt ? new Date(dt).toISOString() : new Date().toISOString()
-                  setForm((f) => ({ ...f, datetime: iso }))
-                }}
-                required
-              />
-            </label>
-            <label className="field">
-              <span className="fieldLabel">Address</span>
-              <input
-                value={form.address}
-                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                placeholder="Street address"
-                required
-              />
-            </label>
-            <label className="field">
-              <span className="fieldLabel">Description</span>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Optional"
-                rows={4}
-              />
-            </label>
+          {user ? (
+            <form onSubmit={onSubmit} className="stack">
+              <div className="sectionTitle">Scheduling an event</div>
+              <label className="field">
+                <span className="fieldLabel">Title</span>
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="e.g. SLO City Council meeting watch party"
+                  required
+                />
+              </label>
+              <label className="field">
+                <span className="fieldLabel">Date / time</span>
+                <input
+                  type="datetime-local"
+                  value={formatDateTimeLocalInput(form.datetime)}
+                  onChange={(e) => {
+                    const dt = e.target.value
+                    const iso = dt ? new Date(dt).toISOString() : new Date().toISOString()
+                    setForm((f) => ({ ...f, datetime: iso }))
+                  }}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span className="fieldLabel">Address</span>
+                <input
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                  placeholder="Street address"
+                  required
+                />
+              </label>
+              <label className="field">
+                <span className="fieldLabel">Description</span>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Optional"
+                  rows={4}
+                />
+              </label>
 
-            <div className="cardActions">
-              <button className="button" disabled={saving}>
-                {saving ? 'Saving…' : 'Submit event'}
-              </button>
+              <div className="cardActions">
+                <button className="button" disabled={saving}>
+                  {saving ? 'Saving…' : 'Submit event'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="authGatePrompt">
+              <p className="sectionTitle">Want to schedule an event?</p>
+              <p className="muted">
+                <Link to="/login">Log in</Link> to post an event to the community calendar.
+              </p>
             </div>
-          </form>
+          )}
         </div>
       </Card>
 
