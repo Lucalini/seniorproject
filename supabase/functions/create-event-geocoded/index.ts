@@ -70,25 +70,40 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = (await req.json()) as CreateEventBody;
-    const title = (body.title ?? "").trim();
-    const datetime = (body.datetime ?? "").trim();
-    const address = (body.address ?? "").trim();
-    const description = (body.description ?? "").trim();
-    const imagePath = (body.imagePath ?? "events/default.png").trim() || "events/default.png";
-    const organizerId = body.organizerId ?? null;
-
-    if (!title || !datetime || !address) {
-      return json({ message: "title, datetime, and address are required" }, 400);
-    }
-
-    const { lat, lng } = await geocodeAddress(address);
+    const authHeader = req.headers.get("authorization") ?? "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "");
 
     const supabaseUrl = requiredEnv("URL");
     const serviceRoleKey = requiredEnv("SERVICE_ROLE_KEY");
     const sb = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    let userId: string | null = null;
+    if (jwt && jwt !== Deno.env.get("SUPABASE_ANON_KEY")) {
+      const { data: { user }, error: authError } = await sb.auth.getUser(jwt);
+      if (authError || !user) {
+        return json({ message: "Invalid or expired token. Please log in again." }, 401);
+      }
+      userId = user.id;
+    }
+
+    if (!userId) {
+      return json({ message: "Authentication required to create events." }, 401);
+    }
+
+    const body = (await req.json()) as CreateEventBody;
+    const title = (body.title ?? "").trim();
+    const datetime = (body.datetime ?? "").trim();
+    const address = (body.address ?? "").trim();
+    const description = (body.description ?? "").trim();
+    const imagePath = (body.imagePath ?? "events/default.png").trim() || "events/default.png";
+
+    if (!title || !datetime || !address) {
+      return json({ message: "title, datetime, and address are required" }, 400);
+    }
+
+    const { lat, lng } = await geocodeAddress(address);
 
     const rpcPayload: Record<string, unknown> = {
       p_title: title,
@@ -98,8 +113,8 @@ Deno.serve(async (req) => {
       p_latitude: lat,
       p_longitude: lng,
       p_image_path: imagePath,
+      p_organizer_id: userId,
     };
-    if (organizerId) rpcPayload.p_organizer_id = organizerId;
 
     const { data, error } = await sb.rpc("create_event", rpcPayload);
     if (error) {

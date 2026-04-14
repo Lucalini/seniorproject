@@ -15,6 +15,9 @@ backend/.env
 backend/.env.*
 !backend/.env.example
 
+#municipal code
+fullmunicipalcodeSLO.pdf
+
 # Python
 *.pyc
 

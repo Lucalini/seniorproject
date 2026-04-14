@@ -54,6 +54,12 @@ export function AppShell({ children }: Props) {
             >
               Education
             </NavLink>
+            <NavLink
+              to="/municipal-code"
+              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
+            >
+              Municipal Code
+            </NavLink>
 
             {!loading && (
               user ? (

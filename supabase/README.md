@@ -101,3 +101,31 @@ Required function secrets:
 - `URL`
 - `SERVICE_ROLE_KEY`
 
+---
+
+## Edge Function: summarize-municipal-sections
+
+Generates a plain-English summary of selected municipal code sections using the Google Gemini API (called from the Ordinance Draft page).
+
+Deploy (JWT verification enabled so only logged-in users can call it):
+
+```bash
+supabase functions deploy summarize-municipal-sections
+```
+
+Required secrets:
+
+- `URL` — Supabase project URL
+- `SERVICE_ROLE_KEY` — service role key (used to validate the user JWT)
+- `GEMINI_API_KEY` — [Google AI Studio](https://aistudio.google.com/) API key
+
+Optional:
+
+- `GEMINI_MODEL` — defaults to `gemini-2.0-flash` if unset
+
+Example:
+
+```bash
+supabase secrets set GEMINI_API_KEY="your-key"
+```
+

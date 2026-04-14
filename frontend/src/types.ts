@@ -45,3 +45,36 @@ export type EducationTopic = {
   bullets: string[]
 }
 
+export type CodeNode = {
+  id: string
+  parentId: string | null
+  nodeType: 'title' | 'chapter' | 'section'
+  number: string
+  heading: string
+  body: string | null
+  sortOrder: number
+  children?: CodeNode[]
+}
+
+export type UserCodeSelection = {
+  id: string
+  userId: string
+  nodeId: string
+  editedBody: string | null
+  selected: boolean
+  updatedAt: string
+}
+
+/** TipTap / ProseMirror JSON stored in ordinance_drafts.proposed_changes_json */
+export type TipTapDocJSON = Record<string, unknown>
+
+export type OrdinanceDraft = {
+  id: string
+  userId: string
+  subject: string
+  summaryText: string
+  reasonText: string
+  proposedChangesJson: TipTapDocJSON
+  updatedAt: string
+}
+

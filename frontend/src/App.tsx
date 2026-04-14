@@ -5,6 +5,8 @@ import { EducationPage } from './pages/EducationPage'
 import { EventsPage } from './pages/EventsPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { MunicipalCodePage } from './pages/MunicipalCodePage'
+import { OrdinanceDraftPage } from './pages/OrdinanceDraftPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { OfficialDetailPage } from './pages/OfficialDetailPage'
 import { OfficialsPage } from './pages/OfficialsPage'
@@ -18,6 +20,8 @@ function App() {
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/:officialId" element={<OfficialDetailPage />} />
         <Route path="/education" element={<EducationPage />} />
+        <Route path="/municipal-code" element={<MunicipalCodePage />} />
+        <Route path="/ordinance-draft" element={<OrdinanceDraftPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />
