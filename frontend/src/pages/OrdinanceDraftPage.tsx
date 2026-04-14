@@ -58,16 +58,17 @@ export function OrdinanceDraftPage() {
       setBooting(false)
       return
     }
+    const accessToken = token
     let cancelled = false
     async function load() {
       try {
         const tree = await listCodeTree()
-        const sels = await getUserSelections(token)
+        const sels = await getUserSelections(accessToken)
         const ids = new Set<string>()
         for (const s of sels) {
           if (s.selected) ids.add(s.nodeId)
         }
-        const draft = await getOrdinanceDraft(token)
+        const draft = await getOrdinanceDraft(accessToken)
         if (cancelled) return
         setRoots(tree)
         setSelectedIds(ids)
