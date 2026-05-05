@@ -168,6 +168,19 @@ curl -X POST "https://<project-ref>.supabase.co/functions/v1/committee-calendar-
   -d '{"urls":["https://www.asi.calpoly.edu/events/business-finance-meeting_s26/"],"lookaheadDays":60}'
 ```
 
+### ASI events missing from the app?
+
+Committee meetings are **not** pulled in by `mobilize-slo-scrape`. That function only inserts Mobilize events via `create_event`. ASI WordPress committee rows come **only** from **`committee-calendar-sync`**, which upserts into `events` with `source = asi_wordpress`.
+
+Checklist:
+
+1. **Deploy** `committee-calendar-sync` and set **`URL`** + **`SERVICE_ROLE_KEY`** (required).
+2. If **`COMMITTEE_CALENDAR_CRON_SECRET`** (or legacy `ASI_CALENDAR_CRON_SECRET`) is set, every request must send **`x-cron-secret`** matching that value; otherwise the function returns **401**.
+3. **Apply migrations** `003_committee_calendar_events.sql` and **`004_asi_committees_and_user_profiles.sql`**. The RPC must include **`p_committee_key`**; without migration `004`, `upsert_imported_event` calls from the Edge Function can fail.
+4. **Run the sync** at least once (cron or manual `curl` above). Inspect the JSON response: each row in `results` has `error`, `upserted`, and `skipped`.
+5. In SQL: **`select url, last_checked_at, last_success_at, last_error from calendar_event_sources order by name;`** — errors from scraping or RPC show up in **`last_error`**.
+6. The app only lists events with **`datetime >= now()`**. Past occurrences disappear even if the WordPress page still shows history.
+
 ---
 
 ## Supabase Edge Function: create-event-geocoded

@@ -110,8 +110,86 @@ function extractAttr(tag: string, attr: string): string | null {
   return decodeHtmlEntities(match?.[2] ?? match?.[3] ?? "").trim() || null;
 }
 
+// InCommon RSA Server CA 2 + USERTrust RSA root certificates.
+// The ASI WordPress server (asi.calpoly.edu) uses InCommon certs which are not
+// in the Supabase Deno edge runtime's default trust store. We provide the full
+// chain here so Deno can verify the TLS connection.
+// TODO: Remove once Supabase updates their Deno runtime CA bundle.
+const INCOMMON_CA_CHAIN = `-----BEGIN CERTIFICATE-----
+MIIGSjCCBDKgAwIBAgIRAINbdhUgbS1uCX4LbkCf78AwDQYJKoZIhvcNAQEMBQAw
+gYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpOZXcgSmVyc2V5MRQwEgYDVQQHEwtK
+ZXJzZXkgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMS4wLAYD
+VQQDEyVVU0VSVHJ1c3QgUlNBIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTIy
+MTExNjAwMDAwMFoXDTMyMTExNTIzNTk1OVowRDELMAkGA1UEBhMCVVMxEjAQBgNV
+BAoTCUludGVybmV0MjEhMB8GA1UEAxMYSW5Db21tb24gUlNBIFNlcnZlciBDQSAy
+MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAifBcxDi60DRXr5dVoPQi
+Q/w+GBE62216UiEGMdbUt7eSiIaFj/iZ/xiFop0rWuH4BCFJ3kSvQF+aIhEsOnuX
+R6mViSpUx53HM5ApIzFIVbd4GqY6tgwaPzu/XRI/4Dmz+hoLW/i/zD19iXvS95qf
+NU8qP7/3/USf2/VNSUNmuMKlaRgwkouue0usidYK7V8W3ze+rTFvWR2JtWKNTInc
+NyWD3GhVy/7G09PwTAu7h0qqRyTkETLf+z7FWtc8c12f+SfvmKHKFVqKpNPtgMkr
+wqwaOgOOD4Q00AihVT+UzJ6MmhNPGg+/Xf0BavmXKCGDTv5uzQeOdD35o/Zw16V4
+C4J4toj1WLY7hkVhrzKG+UWJiSn8Hv3dUTj4dkneJBNQrUfcIfTHV3gCtKwXn1eX
+mrxhH+tWu9RVwsDegRG0s28OMdVeOwljZvYrUjRomutNO5GzynveVxJVCn3Cbn7a
+c4L+5vwPNgs04DdOAGzNYdG5t6ryyYPosSLH2B8qDNzxAgMBAAGjggFwMIIBbDAf
+BgNVHSMEGDAWgBRTeb9aqitKz1SA4dibwJ3ysgNmyzAdBgNVHQ4EFgQU70wAkqb7
+di5eleLJX4cbGdVN4tkwDgYDVR0PAQH/BAQDAgGGMBIGA1UdEwEB/wQIMAYBAf8C
+AQAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMCIGA1UdIAQbMBkwDQYL
+KwYBBAGyMQECAmcwCAYGZ4EMAQICMFAGA1UdHwRJMEcwRaBDoEGGP2h0dHA6Ly9j
+cmwudXNlcnRydXN0LmNvbS9VU0VSVHJ1c3RSU0FDZXJ0aWZpY2F0aW9uQXV0aG9y
+aXR5LmNybDBxBggrBgEFBQcBAQRlMGMwOgYIKwYBBQUHMAKGLmh0dHA6Ly9jcnQu
+dXNlcnRydXN0LmNvbS9VU0VSVHJ1c3RSU0FBQUFDQS5jcnQwJQYIKwYBBQUHMAGG
+GWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcNAQEMBQADggIBACaA
+DTTkHq4ivq8+puKE+ca3JbH32y+odcJqgqzDts5bgsapBswRYypjmXLel11Q2U6w
+rySldlIjBRDZ8Ah8NOs85A6MKJQLaU9qHzRyG6w2UQTzRwx2seY30Mks3ZdIe9rj
+s5rEYliIOh9Dwy8wUTJxXzmYf/A1Gkp4JJp0xIhCVR1gCSOX5JW6185kwid242bs
+Lm0vCQBAA/rQgxvLpItZhC9US/r33lgtX/cYFzB4jGOd+Xs2sEAUlGyu8grLohYh
+kgWN6hqyoFdOpmrl8yu7CSGV7gmVQf9viwVBDIKm+2zLDo/nhRkk8xA0Bb1BqPzy
+bPESSVh4y5rZ5bzB4Lo2YN061HV9+HDnnIDBffNIicACdv4JGyGfpbS6xsi3UCN1
+5ypaG43PJqQ0UnBQDuR60io1ApeSNkYhkaHQ9Tk/0C4A+EM3MW/KFuU53eHLVlX9
+ss1iG2AJfVktaZ2l/SbY7py8JUYMkL/jqZBRjNkD6srsmpJ6utUMmAlt7m1+cTX8
+6/VEBc5Dp9VfuD6hNbNKDSg7YxyEVaBqBEtN5dppj4xSiCrs6LxLHnNo3rG8VJRf
+NVQdgFbMb7dOIBokklzfmU69lS0kgyz2mZMJmW2G/hhEdddJWHh3FcLi2MaeYiOV
+RFrLHtJvXEdf2aEaZ0LOb2Xo3zO6BJvjXldv2woN
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIFgTCCBGmgAwIBAgIQOXJEOvkit1HX02wQ3TE1lTANBgkqhkiG9w0BAQwFADB7
+MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD
+VQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEhMB8GA1UE
+AwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTE5MDMxMjAwMDAwMFoXDTI4
+MTIzMTIzNTk1OVowgYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpOZXcgSmVyc2V5
+MRQwEgYDVQQHEwtKZXJzZXkgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBO
+ZXR3b3JrMS4wLAYDVQQDEyVVU0VSVHJ1c3QgUlNBIENlcnRpZmljYXRpb24gQXV0
+aG9yaXR5MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAgBJlFzYOw9sI
+s9CsVw127c0n00ytUINh4qogTQktZAnczomfzD2p7PbPwdzx07HWezcoEStH2jnG
+vDoZtF+mvX2do2NCtnbyqTsrkfjib9DsFiCQCT7i6HTJGLSR1GJk23+jBvGIGGqQ
+Ijy8/hPwhxR79uQfjtTkUcYRZ0YIUcuGFFQ/vDP+fmyc/xadGL1RjjWmp2bIcmfb
+IWax1Jt4A8BQOujM8Ny8nkz+rwWWNR9XWrf/zvk9tyy29lTdyOcSOk2uTIq3XJq0
+tyA9yn8iNK5+O2hmAUTnAU5GU5szYPeUvlM3kHND8zLDU+/bqv50TmnHa4xgk97E
+xwzf4TKuzJM7UXiVZ4vuPVb+DNBpDxsP8yUmazNt925H+nND5X4OpWaxKXwyhGNV
+icQNwZNUMBkTrNN9N6frXTpsNVzbQdcS2qlJC9/YgIoJk2KOtWbPJYjNhLixP6Q5
+D9kCnusSTJV882sFqV4Wg8y4Z+LoE53MW4LTTLPtW//e5XOsIzstAL81VXQJSdhJ
+WBp/kjbmUZIO8yZ9HE0XvMnsQybQv0FfQKlERPSZ51eHnlAfV1SoPv10Yy+xUGUJ
+5lhCLkMaTLTwJUdZ+gQek9QmRkpQgbLevni3/GcV4clXhB4PY9bpYrrWX1Uu6lzG
+KAgEJTm4Diup8kyXHAc/DVL17e8vgg8CAwEAAaOB8jCB7zAfBgNVHSMEGDAWgBSg
+EQojPpbxB+zirynvgqV/0DCktDAdBgNVHQ4EFgQUU3m/WqorSs9UgOHYm8Cd8rID
+ZsswDgYDVR0PAQH/BAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wEQYDVR0gBAowCDAG
+BgRVHSAAMEMGA1UdHwQ8MDowOKA2oDSGMmh0dHA6Ly9jcmwuY29tb2RvY2EuY29t
+L0FBQUNlcnRpZmljYXRlU2VydmljZXMuY3JsMDQGCCsGAQUFBwEBBCgwJjAkBggr
+BgEFBQcwAYYYaHR0cDovL29jc3AuY29tb2RvY2EuY29tMA0GCSqGSIb3DQEBDAUA
+A4IBAQAYh1HcdCE9nIrgJ7cz0C7M7PDmy14R3iJvm3WOnnL+5Nb+qh+cli3vA0p+
+rvSNb3I8QzvAP+u431yqqcau8vzY7qN7Q/aGNnwU4M309z/+3ri0ivCRlv79Q2R+
+/czSAaF9ffgZGclCKxO/WIu6pKJmBHaIkU4MiRTOok3JMrO66BQavHHxW/BBC5gA
+CiIDEOUMsfnNkjcZ7Tvx5Dq2+UUTJnWvu6rvP3t3O9LEApE9GQDTF1w52z97GA1F
+zZOFli9d31kWTz9RvdVFGD/tSo7oBmF0Ixa1DVBzJ0RHfxBdiSprhTEUxOipakyA
+vGp4z7h/jnZymQyd/teRCBaho1+V
+-----END CERTIFICATE-----`;
+
+const httpClient = Deno.createHttpClient({ caCerts: [INCOMMON_CA_CHAIN] });
+
 async function fetchText(url: string, accept = "text/html"): Promise<{ body: string; finalUrl: string }> {
   const res = await fetch(url, {
+    // @ts-ignore -- Deno-specific option not in lib.dom types
+    client: httpClient,
     headers: {
       accept,
       "user-agent": "polislo-committee-calendar-sync/1.0 (+https://www.asi.calpoly.edu/)",
@@ -199,16 +277,27 @@ function compactDateKey(date: Date): string {
   return dateKey(date).replaceAll("-", "");
 }
 
-function dayName(date: Date): string {
-  return ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][date.getUTCDay()];
+/** Weekday for this calendar Y-M-D in `timeZone` (matches ASI WordPress recurrence repeat_days). */
+function dayNameInEventZone(date: Date, timeZone: string): string {
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  const anchorUtc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone }).format(anchorUtc).toLowerCase();
 }
 
-function startOfWeekMonday(date: Date): Date {
-  const out = new Date(date);
-  const day = out.getUTCDay();
-  const offset = day === 0 ? -6 : 1 - day;
-  out.setUTCDate(out.getUTCDate() + offset);
-  return out;
+/** Monday-start week boundary in the event timezone (for repeat_every intervals). */
+function startOfWeekMondayInZone(date: Date, timeZone: string): Date {
+  const order = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const idx = order.indexOf(dayNameInEventZone(date, timeZone));
+  if (idx < 0) {
+    const out = new Date(date);
+    const day = out.getUTCDay();
+    const offset = day === 0 ? -6 : 1 - day;
+    out.setUTCDate(out.getUTCDate() + offset);
+    return out;
+  }
+  return addDays(date, -idx);
 }
 
 function currentDateInTimeZone(timeZone: string): Date {
@@ -227,15 +316,26 @@ function currentDateInTimeZone(timeZone: string): Date {
 
 function parseTimeParts(value: unknown): { hour: number; minute: number } | null {
   if (typeof value !== "string") return null;
-  const match = value.trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)$/i);
-  if (!match) return null;
+  const s = value.trim().toLowerCase();
 
-  let hour = Number(match[1]);
-  const minute = Number(match[2] ?? "0");
-  const meridiem = match[3].replaceAll(".", "");
-  if (meridiem === "pm" && hour !== 12) hour += 12;
-  if (meridiem === "am" && hour === 12) hour = 0;
-  return { hour, minute };
+  const twelve = s.match(/^(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)$/i);
+  if (twelve) {
+    let hour = Number(twelve[1]);
+    const minute = Number(twelve[2] ?? "0");
+    const meridiem = twelve[3].replaceAll(".", "");
+    if (meridiem === "pm" && hour !== 12) hour += 12;
+    if (meridiem === "am" && hour === 12) hour = 0;
+    return { hour, minute };
+  }
+
+  const twentyFour = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (twentyFour) {
+    const hour = Number(twentyFour[1]);
+    const minute = Number(twentyFour[2]);
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) return { hour, minute };
+  }
+
+  return null;
 }
 
 function offsetMinutesForTimeZone(date: Date, timeZone: string): number {
@@ -304,7 +404,7 @@ function generateOccurrences(acf: Record<string, unknown>, timeZone: string): Oc
   const repeatType = String(recurrence.repeat_type ?? "week").toLowerCase();
   const repeatDays = Array.isArray(recurrence.repeat_days)
     ? new Set(recurrence.repeat_days.map((d) => String(d).toLowerCase()))
-    : new Set([dayName(baseDate)]);
+    : new Set([dayNameInEventZone(baseDate, timeZone)]);
   const endDate = parseUsDateParts(recurrence.end_date);
   const recurrenceEnd = recurrenceEnabled && endDate ? dateOnlyFromParts(endDate) : baseDate;
 
@@ -327,10 +427,10 @@ function generateOccurrences(acf: Record<string, unknown>, timeZone: string): Oc
       byDate.set(dateKey(d), { date: d, cancelled: false });
     }
   } else {
-    const baseWeek = startOfWeekMonday(baseDate);
+    const baseWeek = startOfWeekMondayInZone(baseDate, timeZone);
     for (let d = baseDate; sameOrBefore(d, recurrenceEnd); d = addDays(d, 1)) {
-      const weeksSinceStart = Math.floor(daysBetween(baseWeek, startOfWeekMonday(d)) / 7);
-      if (repeatDays.has(dayName(d)) && weeksSinceStart % repeatEvery === 0) {
+      const weeksSinceStart = Math.floor(daysBetween(baseWeek, startOfWeekMondayInZone(d, timeZone)) / 7);
+      if (repeatDays.has(dayNameInEventZone(d, timeZone)) && weeksSinceStart % repeatEvery === 0) {
         byDate.set(dateKey(d), { date: d, cancelled: false });
       }
     }
@@ -541,17 +641,19 @@ Deno.serve(async (req) => {
         const dateTimes = (acf.event_dates_times ?? {}) as Record<string, unknown>;
         const baseParts = parseUsDateParts(dateTimes.departure_date);
         const startTime = parseTimeParts(dateTimes.departure_time);
-        const endTime = parseTimeParts(dateTimes.return_time);
+        let endTime = parseTimeParts(dateTimes.return_time);
 
-        if (!baseParts || !startTime || !endTime) {
+        if (!baseParts || !startTime) {
           throw new Error("Source did not include parseable event date/time fields");
         }
+        if (!endTime) endTime = startTime;
 
         const baseDate = dateOnlyFromParts(baseParts);
         const baseStart = occurrenceDateTime(baseDate, startTime, timeZone);
         const returnDateParts = parseUsDateParts(dateTimes.return_date) ?? baseParts;
         const baseEnd = zonedDateTimeToUtc(returnDateParts, endTime, timeZone);
-        const durationMs = Math.max(baseEnd.getTime() - baseStart.getTime(), 0);
+        let durationMs = Math.max(baseEnd.getTime() - baseStart.getTime(), 0);
+        if (durationMs === 0) durationMs = 60 * 60 * 1000;
         const occurrences = generateOccurrences(acf, timeZone).filter((occ) =>
           sameOrAfter(occ.date, windowStart) && sameOrBefore(occ.date, windowEnd)
         );

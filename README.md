@@ -1,13 +1,25 @@
 # POLI(SLO)
 
-A web app for **San Luis Obispo County political content**:
+A civic engagement platform for San Luis Obispo County, built to make local government more accessible to Cal Poly students and community members.
 
-- **Frontend**: React + TypeScript (Vite)
-- **Backend**: Supabase (PostgREST + Edge Functions)
+## What it does
 
-## Local dev
+- **Events** — Browse, search, and submit local political events. Community-submitted events are geocoded automatically.
+- **ASI Committee Tracking** — Syncs meeting schedules from Cal Poly's ASI WordPress calendars into a unified view. Covers all 9 student government committees (Board of Directors, Executive Cabinet, UUAB, etc.).
+- **Municipal Code Browser** — Read and search the SLO municipal code with AI-generated section summaries.
+- **Ordinance Drafting** — Rich-text editor for drafting ordinance amendments with PDF export.
+- **Officials Directory** — Look up local elected officials.
 
-### Frontend (React)
+## Architecture
+
+| Layer | Tech |
+|-------|------|
+| Frontend | React 19, TypeScript, Vite, React Router |
+| Backend | Supabase (PostgREST API + Edge Functions + pg_cron) |
+| Auth | Supabase Auth, restricted to `@calpoly.edu` emails |
+| Hosting | Vercel (frontend) |
+
+## Local development
 
 ```bash
 cd frontend
@@ -15,62 +27,24 @@ npm install
 npm run dev
 ```
 
-Open the app at `http://localhost:5173`.
+The app runs at `http://localhost:5173`.
 
-## Supabase setup
+### Environment variables
 
-The frontend calls Supabase directly:
+Create `frontend/.env.local` with:
 
-- PostgREST routes under `/rest/v1/*`
-- Edge Functions under `/functions/v1/*`
-
-Required frontend env vars (in `frontend/.env`):
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-Deploy the event creation function (geocodes + calls `create_event` RPC):
-
-```bash
-supabase functions deploy create-event-geocoded --no-verify-jwt
+```
+VITE_SUPABASE_URL=<your-supabase-project-url>
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
-Deploy the ASI committee calendar sync function:
+## Edge Functions
 
-```bash
-supabase functions deploy committee-calendar-sync --no-verify-jwt
-```
+- **committee-calendar-sync** — Fetches ASI committee meetings from WordPress, expands recurrence rules, and upserts into the events table. Runs on a 6-hour pg_cron schedule.
+- **create-event-geocoded** — Geocodes a user-submitted event address and inserts it.
+- **mobilize-slo-scrape** — Scrapes political events from Mobilize.
+- **summarize-municipal-sections** — Generates AI summaries of municipal code sections.
 
-See `supabase/README.md` for the twice-daily `pg_cron` schedule and required secrets.
+## Status
 
-## Authentication
-
-The app uses Supabase Auth with email verification:
-
-- Only `@calpoly.edu` email addresses can sign up
-- Email verification is required before sign-in
-- See `supabase/migrations/EMAIL_VERIFICATION_SETUP.md` for setup instructions
-
-## What's implemented
-
-- **Home**: latest news + upcoming events
-- **Events**: list + search + "schedule an event" form (map view is a placeholder)
-- **ASI**: committee directory, committee-specific calendars, and tracked committees
-- **Authentication**: Sign up / Sign in with @calpoly.edu email verification
-
-## Color palette (light theme)
-
-- **Primary green**: `#5c996b` (92, 153, 107)
-- **Banner green**: `#3d6647` (61, 102, 71)
-- **Text green**: `#1f3324` (31, 51, 36)
-- **Background**: `#f7f7f7` (247, 247, 247)
-- **Surface**: `#ffffff` (255, 255, 255)
-
-## Next steps (recommended)
-
-- Replace placeholder seed data with **real ingestion** (RSS + agendas/minutes + elections).
-- Add a database (SQLite first, then Postgres) and persist:
-  - `events` (community submitted + imported)
-  - `articles` (from feeds)
-  - `officials` (from civic sources + scraped pages)
-- Add a "**Who represents me?**" flow (address → districts → officials).
+Active development. The committee calendar sync pipeline is built and deployed; a TLS issue on the Supabase Deno runtime currently blocks live WordPress fetches (function logic is correct, awaiting platform fix). See `SEED.md` for manual invocation and troubleshooting.
