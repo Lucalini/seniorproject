@@ -22,6 +22,14 @@ export function LoginPage() {
     setError(null)
     setSignUpSuccess(false)
     try {
+      // Validate @calpoly.edu domain for sign-up
+      if (tab === 'signup') {
+        const emailLower = email.trim().toLowerCase()
+        if (!emailLower.endsWith('@calpoly.edu')) {
+          throw new Error('Only @calpoly.edu email addresses are allowed to sign up.')
+        }
+      }
+
       if (tab === 'signin') {
         await signIn(email, password)
         navigate('/events')
@@ -72,10 +80,15 @@ export function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="yourname@calpoly.edu"
                   required
                   autoComplete="email"
                 />
+                {tab === 'signup' && (
+                  <span className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+                    Only @calpoly.edu email addresses are allowed
+                  </span>
+                )}
               </label>
               <label className="field">
                 <span className="fieldLabel">Password</span>

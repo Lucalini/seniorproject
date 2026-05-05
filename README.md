@@ -24,7 +24,7 @@ The frontend calls Supabase directly:
 - PostgREST routes under `/rest/v1/*`
 - Edge Functions under `/functions/v1/*`
 
-Required frontend env vars:
+Required frontend env vars (in `frontend/.env`):
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
@@ -35,12 +35,21 @@ Deploy the event creation function (geocodes + calls `create_event` RPC):
 supabase functions deploy create-event-geocoded --no-verify-jwt
 ```
 
-## What’s implemented (matches your wireframes)
+## Authentication
+
+The app uses Supabase Auth with email verification:
+
+- Only `@calpoly.edu` email addresses can sign up
+- Email verification is required before sign-in
+- See `supabase/migrations/EMAIL_VERIFICATION_SETUP.md` for setup instructions
+
+## What's implemented
 
 - **Home**: latest news + upcoming events
-- **Events**: list + search + “schedule an event” form (map view is a placeholder)
+- **Events**: list + search + "schedule an event" form (map view is a placeholder)
 - **Civil servants**: searchable directory + detail page with contact + related news
 - **Education**: starter topics (how local gov works + strategies to create change)
+- **Authentication**: Sign up / Sign in with @calpoly.edu email verification
 
 ## Color palette (light theme)
 
@@ -57,5 +66,4 @@ supabase functions deploy create-event-geocoded --no-verify-jwt
   - `events` (community submitted + imported)
   - `articles` (from feeds)
   - `officials` (from civic sources + scraped pages)
-- Add a “**Who represents me?**” flow (address → districts → officials).
-
+- Add a "**Who represents me?**" flow (address → districts → officials).
