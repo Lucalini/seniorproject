@@ -1,6 +1,8 @@
 import './App.css'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
+import { ASICommitteePage } from './pages/ASICommitteePage'
+import { ASIPage } from './pages/ASIPage'
 import { EducationPage } from './pages/EducationPage'
 import { EventsPage } from './pages/EventsPage'
 import { HomePage } from './pages/HomePage'
@@ -17,6 +19,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/asi" element={<ASIPage />} />
+        <Route path="/asi/:committeeKey" element={<ASICommitteePage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/:officialId" element={<OfficialDetailPage />} />
         <Route path="/education" element={<EducationPage />} />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { createEvent, listEvents } from '../api/poli'
+import { createEvent, listCommitteeFollows, listEvents } from '../api/poli'
 import { useAuth } from '../components/AuthProvider'
 import { Card } from '../components/Card'
 import { ErrorBanner } from '../components/ErrorBanner'
@@ -19,9 +19,24 @@ function formatDateTimeLocalInput(iso?: string) {
   )}`
 }
 
+function formatTimeRange(event: Event) {
+  const start = new Date(event.datetime)
+  if (Number.isNaN(start.getTime())) return event.datetime
+
+  const end = event.endDatetime ? new Date(event.endDatetime) : null
+  const date = start.toLocaleDateString()
+  const startTime = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  if (!end || Number.isNaN(end.getTime())) return `${date}, ${startTime}`
+
+  const endDate = end.toLocaleDateString()
+  const endTime = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  return date === endDate ? `${date}, ${startTime} - ${endTime}` : `${date}, ${startTime} - ${endDate}, ${endTime}`
+}
+
 export function EventsPage() {
   const { user, session } = useAuth()
   const [events, setEvents] = useState<Event[] | null>(null)
+  const [followedCommitteeKeys, setFollowedCommitteeKeys] = useState<string[] | null>(null)
   const [q, setQ] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -34,20 +49,34 @@ export function EventsPage() {
   })
 
   useEffect(() => {
-    listEvents({ limit: 50 }, session?.access_token)
-      .then(setEvents)
+    const ac = new AbortController()
+    Promise.all([
+      listEvents({ limit: 100 }, session?.access_token),
+      listCommitteeFollows(session?.access_token, user?.id),
+    ])
+      .then(([ev, follows]) => {
+        if (ac.signal.aborted) return
+        setEvents(ev)
+        setFollowedCommitteeKeys(follows)
+      })
       .catch((e: unknown) => setError(errorMessage(e)))
-  }, [session])
+    return () => ac.abort()
+  }, [session, user])
 
   const filtered = useMemo(() => {
-    const all = events ?? []
+    const all = (events ?? []).filter((event) => {
+      if (!user || followedCommitteeKeys === null) return true
+      if (event.source !== 'asi_wordpress') return true
+      if (!event.committeeKey) return true
+      return followedCommitteeKeys.includes(event.committeeKey)
+    })
     const needle = q.trim().toLowerCase()
     if (!needle) return all
     return all.filter((e) => {
-      const hay = `${e.title} ${e.address ?? ''} ${e.description ?? ''}`.toLowerCase()
+      const hay = `${e.title} ${e.address ?? ''} ${e.description ?? ''} ${e.agendaTitle ?? ''} ${e.source ?? ''}`.toLowerCase()
       return hay.includes(needle)
     })
-  }, [events, q])
+  }, [events, followedCommitteeKeys, q, user])
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault()
@@ -170,16 +199,32 @@ export function EventsPage() {
               {filtered.map((e) => (
                 <div key={e.uuid} className="listRow">
                   <div className="listMain">
-                    <div className="listTitle">{e.title}</div>
+                    <div className="listTitleRow">
+                      <div className="listTitle">{e.title}</div>
+                      {e.status === 'cancelled' ? <span className="pill pillCancelled">Cancelled</span> : null}
+                    </div>
                     <div className="listMeta">
-                      <span className="pill">{new Date(e.datetime).toLocaleString()}</span>
+                      <span className="pill">{formatTimeRange(e)}</span>
                       {e.address ? <span className="muted">{e.address}</span> : null}
                     </div>
-                    {e.description ? <div className="muted">{e.description}</div> : null}
+                    {e.agendaUrl ? (
+                      <div className="eventLinks">
+                        <a href={e.agendaUrl} target="_blank" rel="noreferrer" className="button buttonSecondary buttonCompact">
+                          {e.agendaTitle || 'View agenda'}
+                        </a>
+                      </div>
+                    ) : null}
+                    {e.description ? <div className="muted eventDescription">{e.description}</div> : null}
                   </div>
                 </div>
               ))}
-              {filtered.length === 0 ? <div className="muted">No matches.</div> : null}
+              {filtered.length === 0 ? (
+                <div className="muted">
+                  {user && followedCommitteeKeys?.length === 0
+                    ? 'No tracked ASI committee events yet. Track committees from the ASI tab.'
+                    : 'No matches.'}
+                </div>
+              ) : null}
             </div>
           )}
         </Card>
@@ -187,4 +232,3 @@ export function EventsPage() {
     </div>
   )
 }
-

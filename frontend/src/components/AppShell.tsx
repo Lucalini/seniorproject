@@ -43,22 +43,10 @@ export function AppShell({ children }: Props) {
               Events
             </NavLink>
             <NavLink
-              to="/officials"
+              to="/asi"
               className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
             >
-              Civil Servants
-            </NavLink>
-            <NavLink
-              to="/education"
-              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
-            >
-              Education
-            </NavLink>
-            <NavLink
-              to="/municipal-code"
-              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
-            >
-              Municipal Code
+              ASI
             </NavLink>
 
             {!loading && (
@@ -98,4 +86,3 @@ export function AppShell({ children }: Props) {
     </div>
   )
 }
-

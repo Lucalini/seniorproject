@@ -13,10 +13,18 @@ export type Event = {
   uuid: string
   title: string
   datetime: string // ISO
+  endDatetime?: string | null // ISO
   address: string
   description?: string
   imagePath?: string
   organizerId?: string
+  status?: 'scheduled' | 'cancelled'
+  source?: string
+  sourceUrl?: string
+  committeeKey?: string | null
+  agendaUrl?: string | null
+  agendaTitle?: string | null
+  agendaText?: string | null
 }
 
 export type CreateEventInput = {
@@ -78,3 +86,22 @@ export type OrdinanceDraft = {
   updatedAt: string
 }
 
+export type ASICommittee = {
+  key: string
+  name: string
+  shortName: string
+  description: string
+  committeeUrl: string
+  eventSourceUrl: string
+  eventTitleMatchers: string[]
+}
+
+export type UserProfile = {
+  userId: string
+  displayName: string | null
+  isAsiMember: boolean
+  asiMemberRole: string | null
+  asiCommitteeMemberships: string[]
+  asiMemberVerifiedAt: string | null
+  updatedAt: string
+}

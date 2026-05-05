@@ -79,6 +79,97 @@ Notes:
 
 ---
 
+## Supabase Edge Function: committee-calendar-sync
+
+This Edge Function populates the global calendar from the ASI committee event URLs in `calendar_event_sources`.
+It reads each ASI WordPress event page, follows the advertised WordPress JSON endpoint, expands recurrences,
+tracks cancellation exceptions, and upserts rows into `events` using `external_event_uid`.
+
+The migrations `003_committee_calendar_events.sql` and `004_asi_committees_and_user_profiles.sql` add:
+
+- imported-event metadata on `events` (`source_url`, `external_event_uid`, `status`, `agenda_url`, `agenda_title`, `last_seen_at`, etc.)
+- `calendar_event_sources` with the initial ASI committee URL list
+- `asi_committees` with the committee descriptions and source URLs
+- `profiles` with ASI membership fields
+- `user_committee_follows` so each user can track committees
+- `upsert_imported_event(...)` for idempotent inserts/updates with geography
+
+### 1) Deploy the Edge Function
+
+```bash
+supabase functions deploy committee-calendar-sync --no-verify-jwt
+```
+
+### 2) Set Edge Function secrets
+
+Required:
+
+- `URL`
+- `SERVICE_ROLE_KEY`
+
+Recommended:
+
+- `COMMITTEE_CALENDAR_CRON_SECRET` — shared secret required in the `x-cron-secret` header
+- `ASI_CALENDAR_TIME_ZONE` — defaults to `America/Los_Angeles`
+
+Example:
+
+```bash
+supabase secrets set \
+  URL="https://<project-ref>.supabase.co" \
+  SERVICE_ROLE_KEY="<service-role-key>" \
+  COMMITTEE_CALENDAR_CRON_SECRET="<random-string>" \
+  ASI_CALENDAR_TIME_ZONE="America/Los_Angeles"
+```
+
+### 3) Schedule it twice daily
+
+Supabase schedules Edge Functions with `pg_cron` + `pg_net`. Store the project URL,
+anon key, and cron secret in Vault, then schedule an HTTP call.
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+select vault.create_secret('<your anon key>', 'anon_key');
+select vault.create_secret('<your COMMITTEE_CALENDAR_CRON_SECRET>', 'committee_calendar_cron_secret');
+
+-- Twice daily. This is 7am and 7pm Pacific during daylight saving time.
+-- Cron runs in UTC, so adjust if you need exact local wall-clock time year-round.
+select
+  cron.schedule(
+    'committee-calendar-sync-twice-daily',
+    '0 14,2 * * *',
+    $$
+    select
+      net.http_post(
+        url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url')
+              || '/functions/v1/committee-calendar-sync',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'anon_key'),
+          'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'committee_calendar_cron_secret')
+        ),
+        body := jsonb_build_object('source', 'pg_cron', 'ts', now()),
+        timeout_milliseconds := 60000
+      );
+    $$
+  );
+```
+
+Manual test with a one-off URL list:
+
+```bash
+curl -X POST "https://<project-ref>.supabase.co/functions/v1/committee-calendar-sync" \
+  -H "Authorization: Bearer <anon-key>" \
+  -H "Content-Type: application/json" \
+  -H "x-cron-secret: <COMMITTEE_CALENDAR_CRON_SECRET>" \
+  -d '{"urls":["https://www.asi.calpoly.edu/events/business-finance-meeting_s26/"],"lookaheadDays":60}'
+```
+
+---
+
 ## Supabase Edge Function: create-event-geocoded
 
 The frontend event form now calls an Edge Function (`create-event-geocoded`) instead of FastAPI.
@@ -128,4 +219,3 @@ Example:
 ```bash
 supabase secrets set GEMINI_API_KEY="your-key"
 ```
-

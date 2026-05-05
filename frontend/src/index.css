@@ -272,6 +272,13 @@ textarea:focus {
   font-weight: 720;
 }
 
+.listTitleRow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .listMeta {
   display: flex;
   gap: 10px;
@@ -293,8 +300,28 @@ textarea:focus {
   border-color: rgba(61, 102, 71, 0.22);
 }
 
+.pillCancelled {
+  border-color: rgba(152, 45, 45, 0.24);
+  background: rgba(152, 45, 45, 0.1);
+  color: #6d2424;
+}
+
 .muted {
   color: var(--muted);
+}
+
+.eventLinks {
+  margin-top: 8px;
+}
+
+.eventDescription {
+  margin-top: 8px;
+  white-space: pre-line;
+}
+
+.buttonCompact {
+  padding: 6px 9px;
+  font-size: 13px;
 }
 
 .stack {
@@ -501,6 +528,262 @@ textarea:focus {
 /* Auth: gate prompt on events page */
 .authGatePrompt {
   padding: 8px 0;
+}
+
+/* ASI */
+.asiPage {
+  padding-bottom: 32px;
+}
+
+.asiHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 18px;
+}
+
+.asiCommitteeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.asiCommitteeItem {
+  display: grid;
+  gap: 10px;
+}
+
+.asiCommitteeSquare {
+  aspect-ratio: 1;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.asiCommitteeSquare:hover,
+.asiCommitteeSquare:focus-visible {
+  border-color: rgba(92, 153, 107, 0.5);
+  box-shadow: 0 8px 18px rgba(31, 51, 36, 0.08);
+  transform: translateY(-1px);
+  text-decoration: none;
+  outline: none;
+}
+
+.asiCommitteeSquare[aria-expanded='true'] {
+  border-color: rgba(92, 153, 107, 0.65);
+  box-shadow: 0 0 0 3px rgba(92, 153, 107, 0.12);
+}
+
+.asiCommitteeSquare span {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.asiCommitteeDetails {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 14px;
+}
+
+.asiCommitteeDescription {
+  margin: 0;
+  color: var(--muted);
+}
+
+.asiCommitteeActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.asiSubCalendar {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.asiEventList {
+  display: grid;
+  gap: 8px;
+}
+
+.asiEventRow {
+  padding: 9px 10px;
+  border: 1px solid rgba(31, 51, 36, 0.1);
+  border-radius: 10px;
+  background: rgba(92, 153, 107, 0.05);
+}
+
+.asiEventTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.asiEventTitle {
+  font-weight: 700;
+}
+
+.asiCommitteePage {
+  display: grid;
+  gap: 18px;
+  padding-bottom: 32px;
+}
+
+.asiCommitteePageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 18px;
+}
+
+.asiCommitteeIntro {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.asiCommitteeIntro p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.asiCalendar {
+  display: grid;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.asiCalendarHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.asiCalendarControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asiCalendarMonth {
+  min-width: 150px;
+  text-align: center;
+  font-weight: 750;
+}
+
+.asiCalendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 720px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.asiCalendarWeekday {
+  padding: 9px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--muted);
+  background: rgba(92, 153, 107, 0.08);
+  border-right: 1px solid rgba(31, 51, 36, 0.08);
+  border-bottom: 1px solid rgba(31, 51, 36, 0.08);
+}
+
+.asiCalendarWeekday:nth-child(7) {
+  border-right: 0;
+}
+
+.asiCalendarDay {
+  min-height: 118px;
+  padding: 8px;
+  border-right: 1px solid rgba(31, 51, 36, 0.08);
+  border-bottom: 1px solid rgba(31, 51, 36, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.asiCalendarDay:nth-child(7n) {
+  border-right: 0;
+}
+
+.asiCalendarDay:nth-last-child(-n + 7) {
+  border-bottom: 0;
+}
+
+.asiCalendarDayOutside {
+  background: rgba(31, 51, 36, 0.03);
+  color: rgba(31, 51, 36, 0.42);
+}
+
+.asiCalendarDate {
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.asiCalendarEvents {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.asiCalendarEvent {
+  display: grid;
+  gap: 1px;
+  padding: 6px 7px;
+  border-radius: 7px;
+  border: 1px solid rgba(92, 153, 107, 0.22);
+  background: rgba(92, 153, 107, 0.1);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.asiCalendarEvent span {
+  color: var(--muted);
+}
+
+.asiCalendarEvent strong {
+  font-weight: 750;
+}
+
+.asiCalendarEventCancelled {
+  border-color: rgba(152, 45, 45, 0.24);
+  background: rgba(152, 45, 45, 0.09);
+  color: #6d2424;
+}
+
+.asiUpcomingList {
+  display: grid;
+  gap: 10px;
 }
 
 /* ── Municipal Code page ──────────────────────────────────────────────────── */
@@ -820,11 +1103,20 @@ textarea:focus {
   .row2 {
     grid-template-columns: 1fr;
   }
+  .asiCommitteeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .mcLayout {
     grid-template-columns: 1fr;
   }
   .mcSidebar {
     position: static;
     max-height: 50vh;
+  }
+}
+
+@media (max-width: 560px) {
+  .asiCommitteeGrid {
+    grid-template-columns: 1fr;
   }
 }

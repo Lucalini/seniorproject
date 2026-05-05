@@ -35,6 +35,14 @@ Deploy the event creation function (geocodes + calls `create_event` RPC):
 supabase functions deploy create-event-geocoded --no-verify-jwt
 ```
 
+Deploy the ASI committee calendar sync function:
+
+```bash
+supabase functions deploy committee-calendar-sync --no-verify-jwt
+```
+
+See `supabase/README.md` for the twice-daily `pg_cron` schedule and required secrets.
+
 ## Authentication
 
 The app uses Supabase Auth with email verification:
@@ -47,8 +55,7 @@ The app uses Supabase Auth with email verification:
 
 - **Home**: latest news + upcoming events
 - **Events**: list + search + "schedule an event" form (map view is a placeholder)
-- **Civil servants**: searchable directory + detail page with contact + related news
-- **Education**: starter topics (how local gov works + strategies to create change)
+- **ASI**: committee directory, committee-specific calendars, and tracked committees
 - **Authentication**: Sign up / Sign in with @calpoly.edu email verification
 
 ## Color palette (light theme)

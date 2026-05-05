@@ -1,6 +1,7 @@
 import { HttpError, postgrest, supabaseFetch, supabaseFunction } from './postgrest'
 import { EDUCATION_SEED, NEWS_SEED } from './seeds'
 import type {
+  ASICommittee,
   CodeNode,
   CreateEventInput,
   Event,
@@ -8,7 +9,68 @@ import type {
   Politician,
   TipTapDocJSON,
   UserCodeSelection,
+  UserProfile,
 } from '../types'
+import { ASI_COMMITTEES } from '../data/asiCommittees'
+
+const RICH_EVENT_FIELDS = [
+  'uuid',
+  'title',
+  'description',
+  'datetime',
+  'endDatetime:end_datetime',
+  'address',
+  'imagePath:image_path',
+  'organizerId:organizer_id',
+  'status',
+  'source',
+  'sourceUrl:source_url',
+  'committeeKey:committee_key',
+  'agendaUrl:agenda_url',
+  'agendaTitle:agenda_title',
+  'agendaText:agenda_text',
+].join(',')
+
+const LEGACY_EVENT_FIELDS = 'uuid,title,description,datetime,address,imagePath:image_path,organizerId:organizer_id'
+
+function isMissingSchemaError(e: unknown) {
+  if (!(e instanceof HttpError)) return false
+  const message = e.message.toLowerCase()
+  return (
+    (e.status === 400 || e.status === 404) &&
+    (message.includes('does not exist') ||
+      message.includes('could not find') ||
+      message.includes('schema cache') ||
+      message.includes('column') ||
+      message.includes('relation'))
+  )
+}
+
+function buildEventParams(params: { q?: string; limit?: number } | undefined, fields: string, includeImportedFields: boolean) {
+  const sp = new URLSearchParams()
+  sp.set('select', fields)
+  sp.set('order', 'datetime.asc')
+  if (params?.limit) sp.set('limit', String(params.limit))
+  sp.set('datetime', `gte.${new Date().toISOString()}`)
+
+  if (params?.q?.trim()) {
+    const needle = params.q.trim().replaceAll('*', '')
+    const searchFields = includeImportedFields
+      ? `(title.ilike.*${needle}*,description.ilike.*${needle}*,address.ilike.*${needle}*,agenda_title.ilike.*${needle}*,source.ilike.*${needle}*)`
+      : `(title.ilike.*${needle}*,description.ilike.*${needle}*,address.ilike.*${needle}*)`
+    sp.set('or', searchFields)
+  }
+
+  return sp
+}
+
+function normalizeLegacyEvents(events: Event[]) {
+  return events.map((event) => ({
+    ...event,
+    status: event.status ?? 'scheduled',
+    source: event.source ?? 'manual',
+  }))
+}
 
 export function listNews(params?: { q?: string; limit?: number; officialId?: string }) {
   const needle = params?.q?.trim().toLowerCase()
@@ -32,18 +94,14 @@ export function listNews(params?: { q?: string; limit?: number; officialId?: str
 }
 
 export function listEvents(params?: { q?: string; limit?: number }, accessToken?: string) {
-  const sp = new URLSearchParams()
-  sp.set('select', 'uuid,title,description,datetime,address,imagePath:image_path,organizerId:organizer_id')
-  sp.set('order', 'datetime.asc')
-  if (params?.limit) sp.set('limit', String(params.limit))
-  sp.set('datetime', `gte.${new Date().toISOString()}`)
-
-  if (params?.q?.trim()) {
-    const needle = params.q.trim().replaceAll('*', '')
-    sp.set('or', `(title.ilike.*${needle}*,description.ilike.*${needle}*,address.ilike.*${needle}*)`)
-  }
-
-  return postgrest<Event[]>(`/rest/v1/events?${sp.toString()}`, {}, accessToken)
+  const richParams = buildEventParams(params, RICH_EVENT_FIELDS, true)
+  return postgrest<Event[]>(`/rest/v1/events?${richParams.toString()}`, {}, accessToken)
+    .then(normalizeLegacyEvents)
+    .catch((e: unknown) => {
+      if (!isMissingSchemaError(e)) throw e
+      const legacyParams = buildEventParams(params, LEGACY_EVENT_FIELDS, false)
+      return postgrest<Event[]>(`/rest/v1/events?${legacyParams.toString()}`, {}, accessToken).then(normalizeLegacyEvents)
+    })
 }
 
 export function createEvent(input: CreateEventInput, accessToken?: string) {
@@ -83,6 +141,114 @@ export async function getOfficial(officialId: string) {
 
 export function listEducation() {
   return Promise.resolve(EDUCATION_SEED)
+}
+
+// ── ASI Committees ──────────────────────────────────────────────────────────
+
+type CommitteeFollowRow = { committeeKey: string }
+type ProfileRow = {
+  userId: string
+  displayName: string | null
+  isAsiMember: boolean
+  asiMemberRole: string | null
+  asiCommitteeMemberships: string[] | null
+  asiMemberVerifiedAt: string | null
+  updatedAt: string
+}
+
+function followStorageKey(userId?: string) {
+  return `poli:asi-committee-follows:${userId ?? 'guest'}`
+}
+
+function readLocalFollows(userId?: string) {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(followStorageKey(userId))
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function writeLocalFollows(keys: string[], userId?: string) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(followStorageKey(userId), JSON.stringify([...new Set(keys)].sort()))
+}
+
+export function listASICommittees(): Promise<ASICommittee[]> {
+  return Promise.resolve(ASI_COMMITTEES)
+}
+
+export async function listCommitteeFollows(accessToken?: string, userId?: string) {
+  if (!accessToken) return readLocalFollows(userId)
+
+  const sp = new URLSearchParams()
+  sp.set('select', 'committeeKey:committee_key')
+  try {
+    const rows = await postgrest<CommitteeFollowRow[]>(`/rest/v1/user_committee_follows?${sp}`, {}, accessToken)
+    return rows.map((row) => row.committeeKey)
+  } catch (e: unknown) {
+    if (isMissingSchemaError(e)) return readLocalFollows(userId)
+    throw e
+  }
+}
+
+export async function setCommitteeFollow(
+  committeeKey: string,
+  following: boolean,
+  accessToken?: string,
+  userId?: string,
+) {
+  const local = new Set(readLocalFollows(userId))
+  if (following) local.add(committeeKey)
+  else local.delete(committeeKey)
+  writeLocalFollows([...local], userId)
+
+  if (!accessToken) return [...local].sort()
+
+  try {
+    if (following) {
+      await supabaseFetch('/rest/v1/user_committee_follows', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          prefer: 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify({ committee_key: committeeKey }),
+      }, accessToken)
+    } else {
+      const sp = new URLSearchParams()
+      sp.set('committee_key', `eq.${committeeKey}`)
+      await supabaseFetch(`/rest/v1/user_committee_follows?${sp}`, { method: 'DELETE' }, accessToken)
+    }
+  } catch (e: unknown) {
+    if (!isMissingSchemaError(e)) throw e
+  }
+
+  return [...local].sort()
+}
+
+export async function getUserProfile(accessToken: string): Promise<UserProfile | null> {
+  const sp = new URLSearchParams()
+  sp.set(
+    'select',
+    'userId:user_id,displayName:display_name,isAsiMember:is_asi_member,asiMemberRole:asi_member_role,asiCommitteeMemberships:asi_committee_memberships,asiMemberVerifiedAt:asi_member_verified_at,updatedAt:updated_at',
+  )
+  sp.set('limit', '1')
+
+  try {
+    const rows = await postgrest<ProfileRow[]>(`/rest/v1/profiles?${sp}`, {}, accessToken)
+    const row = rows[0]
+    if (!row) return null
+    return {
+      ...row,
+      asiCommitteeMemberships: row.asiCommitteeMemberships ?? [],
+    }
+  } catch (e: unknown) {
+    if (isMissingSchemaError(e)) return null
+    throw e
+  }
 }
 
 // ── Municipal Code ───────────────────────────────────────────────────────────
@@ -240,4 +406,3 @@ export function summarizeCodeSections(sections: SummarizeSectionInput[], accessT
     accessToken,
   )
 }
-
