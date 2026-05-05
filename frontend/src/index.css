@@ -1096,6 +1096,621 @@ textarea:focus {
   padding: 0 1px;
 }
 
+/* Bulletin Board */
+.bbPage {
+  padding: 18px 0 40px;
+}
+
+.bbHero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.bbFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bbFilterChip,
+.bbTagChoice {
+  border: 1px solid rgba(92, 153, 107, 0.28);
+  background: rgba(92, 153, 107, 0.1);
+  color: var(--green-900);
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.bbFilterChipMuted {
+  opacity: 0.48;
+  background: rgba(255, 255, 255, 0.8);
+  text-decoration: line-through;
+}
+
+.bbSortControl {
+  display: grid;
+  gap: 6px;
+  min-width: 210px;
+}
+
+.bbToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.bbToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.bbToolbarRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.bbToolbarMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+.bbFilterMenuWrap {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bbFilterIconButton {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 51, 36, 0.16);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--green-900);
+  cursor: pointer;
+}
+
+.bbFilterIconButton:hover,
+.bbFilterIconButtonActive {
+  background: rgba(92, 153, 107, 0.13);
+  border-color: rgba(92, 153, 107, 0.38);
+}
+
+.bbFilterDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: min(360px, calc(100vw - 32px));
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(31, 51, 36, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 50px rgba(31, 51, 36, 0.16);
+}
+
+.bbFilterSection {
+  display: grid;
+  gap: 8px;
+}
+
+.bbFilterTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.bbSortOptions {
+  display: grid;
+  gap: 6px;
+}
+
+.bbSortOption {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(31, 51, 36, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--green-900);
+  cursor: pointer;
+  font-weight: 650;
+  padding: 8px 10px;
+}
+
+.bbSortOptionActive {
+  background: rgba(92, 153, 107, 0.14);
+  border-color: rgba(92, 153, 107, 0.38);
+}
+
+.bbTagFilterChip {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(92, 153, 107, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--green-900);
+  border-radius: 999px;
+  padding: 0 0 0 10px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.bbTagFilterChipActive {
+  background: rgba(92, 153, 107, 0.14);
+  border-color: rgba(92, 153, 107, 0.5);
+}
+
+.bbTagFilterChip > span:first-child {
+  padding: 7px 0;
+}
+
+.bbTagFilterIcon {
+  width: 32px;
+  display: grid;
+  place-items: center;
+  border-left: 1px solid rgba(31, 51, 36, 0.1);
+  background: rgba(92, 153, 107, 0.08);
+}
+
+.bbSvgIcon {
+  width: 17px;
+  height: 17px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bbFeed {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+}
+
+.bbThreadCard,
+.bbThreadDetail,
+.bbCommentsSection {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 16px;
+}
+
+.bbThreadCardTop,
+.bbCommentsHeader,
+.bbModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bbThreadTaxonomy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bbMetaLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bbMetaLineRight {
+  justify-content: flex-end;
+  margin-left: auto;
+  text-align: right;
+}
+
+.bbTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 51, 36, 0.14);
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--green-900);
+}
+
+.bbTypeBadge-normal {
+  background: rgba(92, 153, 107, 0.11);
+}
+
+.bbTypeBadge-poll {
+  background: rgba(36, 111, 148, 0.12);
+}
+
+.bbTypeBadge-event {
+  background: rgba(139, 91, 43, 0.13);
+}
+
+.bbVotes {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.bbVoteButton,
+.bbIconButton,
+.bbTextButton {
+  border: 1px solid rgba(31, 51, 36, 0.14);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--green-900);
+  cursor: pointer;
+  font: inherit;
+}
+
+.bbVoteButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bbVoteButton:disabled,
+.bbTextButton:disabled,
+.bbIconButton:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.bbThreadTitle {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--green-900);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.bbThreadBody,
+.bbDetailBody {
+  margin: 10px 0 0;
+  color: rgba(31, 51, 36, 0.86);
+  line-height: 1.65;
+}
+
+.bbDetailTitle {
+  margin: 16px 0 0;
+  font-size: 30px;
+  line-height: 1.18;
+}
+
+.bbInlinePanel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(31, 51, 36, 0.1);
+  border-radius: 12px;
+  background: rgba(92, 153, 107, 0.06);
+}
+
+.bbInlinePanelTitle {
+  font-weight: 800;
+}
+
+.bbPollOptions {
+  display: grid;
+  gap: 8px;
+}
+
+.bbPollOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(31, 51, 36, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.bbPollOption input {
+  width: auto;
+}
+
+.bbPollOptionDisabled {
+  cursor: not-allowed;
+}
+
+.bbPollOptionDisabled span {
+  opacity: 0.74;
+}
+
+.bbPollFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bbEventDetails {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+
+.bbThreadFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 14px;
+}
+
+.bbThreadFooterLeft {
+  display: grid;
+  gap: 8px;
+}
+
+.bbTagRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 1px;
+}
+
+.bbCommentLink,
+.bbTextButton {
+  color: var(--green-700);
+  font-weight: 750;
+}
+
+.bbCommentEntry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.bbTextButton {
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+}
+
+.bbReadOnlyNotice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  border: 1px solid rgba(31, 51, 36, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 11px 12px;
+  margin-bottom: 14px;
+}
+
+.bbEmptyState {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  color: var(--muted);
+  padding: 24px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.bbModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(31, 51, 36, 0.34);
+}
+
+.bbModal {
+  width: min(680px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow-y: auto;
+  border: 1px solid rgba(31, 51, 36, 0.2);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(31, 51, 36, 0.22);
+  padding: 18px;
+}
+
+.bbAuthPopup {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgba(31, 51, 36, 0.2);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(31, 51, 36, 0.22);
+  padding: 18px;
+}
+
+.bbModalHeader h2,
+.bbCommentsHeader h2 {
+  margin: 0;
+}
+
+.bbIconButton {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bbComposerForm,
+.bbConditionalFields,
+.bbCommentComposer {
+  display: grid;
+  gap: 12px;
+}
+
+.bbSegmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(31, 51, 36, 0.1);
+  border-radius: 14px;
+  background: rgba(92, 153, 107, 0.06);
+}
+
+.bbSegmented button {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.bbSegmented .bbSegmentActive {
+  border-color: rgba(92, 153, 107, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--green-900);
+}
+
+.bbTagPicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bbTagChoiceActive {
+  border-color: rgba(92, 153, 107, 0.62);
+  background: rgba(92, 153, 107, 0.2);
+}
+
+.bbModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bbThreadDetail,
+.bbCommentsSection {
+  width: 100%;
+  margin: 14px auto 0;
+}
+
+.bbDetailVoteRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+.bbOwnerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bbEditForm {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.bbReplyingTo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid rgba(31, 51, 36, 0.1);
+  border-radius: 10px;
+  background: rgba(92, 153, 107, 0.07);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bbCommentsSection {
+  display: grid;
+  gap: 14px;
+}
+
+.bbCommentList {
+  display: grid;
+  gap: 10px;
+}
+
+.bbComment {
+  margin-left: calc(var(--comment-depth) * 22px);
+}
+
+.bbCommentBody {
+  border: 1px solid rgba(31, 51, 36, 0.11);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 12px;
+}
+
+.bbCommentBody p {
+  margin: 8px 0 0;
+}
+
+.bbCommentActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.bbReplies {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bbDeletedComment {
+  color: var(--muted);
+  font-style: italic;
+}
+
 @media (max-width: 860px) {
   .grid {
     grid-template-columns: 1fr;
@@ -1112,6 +1727,46 @@ textarea:focus {
   .mcSidebar {
     position: static;
     max-height: 50vh;
+  }
+  .bbHero,
+  .bbThreadCardTop,
+  .bbThreadFooter,
+  .bbCommentsHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bbMetaLineRight {
+    justify-content: flex-start;
+    margin-left: 0;
+    text-align: left;
+  }
+  .bbFilterGroup {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+  .bbToolbar {
+    align-items: flex-start;
+  }
+  .bbToolbarLeft {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bbToolbarRight {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+  }
+  .bbFilterDropdown {
+    right: 0;
+  }
+  .bbSortControl {
+    min-width: 0;
+  }
+  .bbComment {
+    margin-left: calc(var(--comment-depth) * 12px);
+  }
+  .bbSegmented {
+    grid-template-columns: 1fr;
   }
 }
 

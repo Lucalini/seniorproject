@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { ASICommitteePage } from './pages/ASICommitteePage'
 import { ASIPage } from './pages/ASIPage'
+import { BulletinBoardPage, BulletinThreadPage } from './pages/BulletinBoardPage'
 import { EducationPage } from './pages/EducationPage'
 import { EventsPage } from './pages/EventsPage'
 import { HomePage } from './pages/HomePage'
@@ -23,6 +24,9 @@ function App() {
         <Route path="/asi/:committeeKey" element={<ASICommitteePage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/:officialId" element={<OfficialDetailPage />} />
+        <Route path="/bulletin-board" element={<BulletinBoardPage />} />
+        <Route path="/bulletin-board/:threadId" element={<BulletinThreadPage />} />
+        {/* Education is intentionally preserved but hidden from navigation while Bulletin Board replaces it. */}
         <Route path="/education" element={<EducationPage />} />
         <Route path="/municipal-code" element={<MunicipalCodePage />} />
         <Route path="/ordinance-draft" element={<OrdinanceDraftPage />} />

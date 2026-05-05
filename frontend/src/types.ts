@@ -105,3 +105,84 @@ export type UserProfile = {
   asiMemberVerifiedAt: string | null
   updatedAt: string
 }
+
+export type BulletinThreadType = 'normal' | 'poll' | 'event'
+export type BulletinThreadStatus = 'active' | 'hidden' | 'archived'
+export type BulletinSortOrder = 'newest' | 'oldest' | 'most-upvoted' | 'most-commented'
+
+export type BulletinTag = {
+  key: string
+  label: string
+  tagKind: 'system' | 'committee'
+  committeeKey: string | null
+  active: boolean
+  displayOrder: number
+}
+
+export type BulletinPollOption = {
+  id: string
+  threadId: string
+  body: string
+  position: number
+  votes: number
+}
+
+export type BulletinComment = {
+  id: string
+  threadId: string
+  parentId: string | null
+  authorId: string
+  authorDisplayName: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  editedAt: string | null
+  deletedAt: string | null
+  likes: number
+  dislikes: number
+  replies?: BulletinComment[]
+}
+
+export type BulletinThread = {
+  id: string
+  authorId: string
+  authorDisplayName: string
+  title: string
+  body: string
+  threadType: BulletinThreadType
+  status: BulletinThreadStatus
+  pollClosesAt: string | null
+  eventLocation: string | null
+  eventStartsAt: string | null
+  eventEndsAt: string | null
+  createdAt: string
+  updatedAt: string
+  editedAt: string | null
+  deletedAt: string | null
+  tags: string[]
+  likes: number
+  dislikes: number
+  comments: BulletinComment[]
+  pollOptions: BulletinPollOption[]
+  pollResponseOptionIds: string[]
+}
+
+export type BulletinBoardPreferences = {
+  userId: string
+  hiddenTagKeys: string[]
+  hiddenThreadTypes: BulletinThreadType[]
+  sortOrder: BulletinSortOrder
+  updatedAt: string
+}
+
+export type CreateBulletinThreadInput = {
+  title: string
+  body: string
+  threadType: BulletinThreadType
+  tagKeys: string[]
+  pollClosesAt?: string | null
+  pollOptions?: string[]
+  eventLocation?: string | null
+  eventStartsAt?: string | null
+  eventEndsAt?: string | null
+}

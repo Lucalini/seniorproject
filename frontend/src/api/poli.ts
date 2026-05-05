@@ -2,7 +2,15 @@ import { HttpError, postgrest, supabaseFetch, supabaseFunction } from './postgre
 import { EDUCATION_SEED, NEWS_SEED } from './seeds'
 import type {
   ASICommittee,
+  BulletinBoardPreferences,
+  BulletinComment,
+  BulletinPollOption,
+  BulletinSortOrder,
+  BulletinTag,
+  BulletinThread,
+  BulletinThreadType,
   CodeNode,
+  CreateBulletinThreadInput,
   CreateEventInput,
   Event,
   OrdinanceDraft,
@@ -249,6 +257,418 @@ export async function getUserProfile(accessToken: string): Promise<UserProfile |
     if (isMissingSchemaError(e)) return null
     throw e
   }
+}
+
+// ── Bulletin Board ──────────────────────────────────────────────────────────
+
+type BulletinTagRow = {
+  key: string
+  label: string
+  tagKind: 'system' | 'committee'
+  committeeKey: string | null
+  active: boolean
+  displayOrder: number
+}
+
+type BulletinThreadRow = {
+  id: string
+  authorId: string
+  authorDisplayName: string
+  title: string
+  body: string
+  threadType: BulletinThreadType
+  status: 'active' | 'hidden' | 'archived'
+  pollClosesAt: string | null
+  eventLocation: string | null
+  eventStartsAt: string | null
+  eventEndsAt: string | null
+  createdAt: string
+  updatedAt: string
+  editedAt: string | null
+  deletedAt: string | null
+}
+
+type BulletinThreadTagRow = {
+  threadId: string
+  tagKey: string
+}
+
+type BulletinCommentRow = {
+  id: string
+  threadId: string
+  parentId: string | null
+  authorId: string
+  authorDisplayName: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  editedAt: string | null
+  deletedAt: string | null
+}
+
+type BulletinVoteCountRow = {
+  threadId?: string
+  commentId?: string
+  likes: number | null
+  dislikes: number | null
+}
+
+type BulletinPollOptionRow = {
+  id: string
+  threadId: string
+  body: string
+  position: number
+}
+
+type BulletinPollOptionVoteCountRow = {
+  pollOptionId: string
+  votes: number | null
+}
+
+type BulletinPollResponseRow = {
+  id: string
+  threadId: string
+}
+
+type BulletinPollResponseOptionRow = {
+  responseId: string
+  pollOptionId: string
+}
+
+type BulletinPreferenceRow = {
+  userId: string
+  hiddenTagKeys: string[] | null
+  hiddenThreadTypes: BulletinThreadType[] | null
+  sortOrder: BulletinSortOrder
+  updatedAt: string
+}
+
+const BULLETIN_THREAD_FIELDS = [
+  'id',
+  'authorId:author_id',
+  'authorDisplayName:author_display_name',
+  'title',
+  'body',
+  'threadType:thread_type',
+  'status',
+  'pollClosesAt:poll_closes_at',
+  'eventLocation:event_location',
+  'eventStartsAt:event_starts_at',
+  'eventEndsAt:event_ends_at',
+  'createdAt:created_at',
+  'updatedAt:updated_at',
+  'editedAt:edited_at',
+  'deletedAt:deleted_at',
+].join(',')
+
+const BULLETIN_COMMENT_FIELDS = [
+  'id',
+  'threadId:thread_id',
+  'parentId:parent_id',
+  'authorId:author_id',
+  'authorDisplayName:author_display_name',
+  'body',
+  'createdAt:created_at',
+  'updatedAt:updated_at',
+  'editedAt:edited_at',
+  'deletedAt:deleted_at',
+].join(',')
+
+export async function listBulletinTags(): Promise<BulletinTag[]> {
+  const sp = new URLSearchParams()
+  sp.set('select', 'key,label,tagKind:tag_kind,committeeKey:committee_key,active,displayOrder:display_order')
+  sp.set('active', 'eq.true')
+  sp.set('order', 'display_order.asc')
+  return postgrest<BulletinTagRow[]>(`/rest/v1/bulletin_board_tags?${sp}`).catch((e: unknown) => {
+    if (isMissingSchemaError(e)) return []
+    throw e
+  })
+}
+
+function nestBulletinComments(comments: BulletinComment[]): BulletinComment[] {
+  const byId = new Map(comments.map((comment) => [comment.id, { ...comment, replies: [] as BulletinComment[] }]))
+  const roots: BulletinComment[] = []
+
+  for (const comment of byId.values()) {
+    if (comment.parentId && byId.has(comment.parentId)) {
+      byId.get(comment.parentId)!.replies!.push(comment)
+    } else {
+      roots.push(comment)
+    }
+  }
+
+  return roots
+}
+
+export async function listBulletinThreads(accessToken?: string): Promise<BulletinThread[]> {
+  const sp = new URLSearchParams()
+  sp.set('select', BULLETIN_THREAD_FIELDS)
+  sp.set('order', 'created_at.desc')
+
+  try {
+    const threads = await postgrest<BulletinThreadRow[]>(`/rest/v1/bulletin_threads?${sp}`, {}, accessToken)
+    const threadIds = threads.map((thread) => thread.id)
+    if (threadIds.length === 0) return []
+
+    const idList = `(${threadIds.join(',')})`
+    const [tagRows, threadVoteRows, commentRows, commentVoteRows, pollOptions, pollOptionVoteRows] = await Promise.all([
+      postgrest<BulletinThreadTagRow[]>(`/rest/v1/bulletin_thread_tags?select=threadId:thread_id,tagKey:tag_key&thread_id=in.${idList}`, {}, accessToken),
+      postgrest<BulletinVoteCountRow[]>(`/rest/v1/bulletin_thread_vote_counts?select=threadId:thread_id,likes,dislikes&thread_id=in.${idList}`, {}, accessToken),
+      postgrest<BulletinCommentRow[]>(`/rest/v1/bulletin_comments?select=${BULLETIN_COMMENT_FIELDS}&thread_id=in.${idList}&order=created_at.asc`, {}, accessToken),
+      postgrest<BulletinVoteCountRow[]>(`/rest/v1/bulletin_comment_vote_counts?select=commentId:comment_id,likes,dislikes`, {}, accessToken),
+      postgrest<BulletinPollOptionRow[]>(`/rest/v1/bulletin_poll_options?select=id,threadId:thread_id,body,position&thread_id=in.${idList}&order=position.asc`, {}, accessToken),
+      postgrest<BulletinPollOptionVoteCountRow[]>('/rest/v1/bulletin_poll_option_vote_counts?select=pollOptionId:poll_option_id,votes', {}, accessToken)
+        .catch((e: unknown) => {
+          if (isMissingSchemaError(e)) return []
+          throw e
+        }),
+    ])
+
+    const tagsByThread = new Map<string, string[]>()
+    for (const row of tagRows) tagsByThread.set(row.threadId, [...(tagsByThread.get(row.threadId) ?? []), row.tagKey])
+
+    const votesByThread = new Map(threadVoteRows.map((row) => [row.threadId, row]))
+    const votesByComment = new Map(commentVoteRows.map((row) => [row.commentId, row]))
+
+    const commentsByThread = new Map<string, BulletinComment[]>()
+    for (const row of commentRows) {
+      const votes = votesByComment.get(row.id)
+      const comment: BulletinComment = {
+        ...row,
+        likes: votes?.likes ?? 0,
+        dislikes: votes?.dislikes ?? 0,
+      }
+      commentsByThread.set(row.threadId, [...(commentsByThread.get(row.threadId) ?? []), comment])
+    }
+
+    const pollVotesByOption = new Map(pollOptionVoteRows.map((row) => [row.pollOptionId, row.votes ?? 0]))
+    const pollOptionsByThread = new Map<string, BulletinPollOption[]>()
+    for (const row of pollOptions) {
+      pollOptionsByThread.set(row.threadId, [...(pollOptionsByThread.get(row.threadId) ?? []), {
+        ...row,
+        votes: pollVotesByOption.get(row.id) ?? 0,
+      }])
+    }
+
+    const selectedPollOptionsByThread = new Map<string, string[]>()
+    if (accessToken) {
+      const responses = await postgrest<BulletinPollResponseRow[]>(`/rest/v1/bulletin_poll_responses?select=id,threadId:thread_id&thread_id=in.${idList}`, {}, accessToken)
+      const responseIds = responses.map((response) => response.id)
+      if (responseIds.length > 0) {
+        const responseIdList = `(${responseIds.join(',')})`
+        const responseOptions = await postgrest<BulletinPollResponseOptionRow[]>(`/rest/v1/bulletin_poll_response_options?select=responseId:response_id,pollOptionId:poll_option_id&response_id=in.${responseIdList}`, {}, accessToken)
+        const threadByResponse = new Map(responses.map((response) => [response.id, response.threadId]))
+        for (const option of responseOptions) {
+          const responseThreadId = threadByResponse.get(option.responseId)
+          if (!responseThreadId) continue
+          selectedPollOptionsByThread.set(responseThreadId, [
+            ...(selectedPollOptionsByThread.get(responseThreadId) ?? []),
+            option.pollOptionId,
+          ])
+        }
+      }
+    }
+
+    return threads.map((thread) => {
+      const votes = votesByThread.get(thread.id)
+      return {
+        ...thread,
+        tags: tagsByThread.get(thread.id) ?? [],
+        likes: votes?.likes ?? 0,
+        dislikes: votes?.dislikes ?? 0,
+        comments: nestBulletinComments(commentsByThread.get(thread.id) ?? []),
+        pollOptions: pollOptionsByThread.get(thread.id) ?? [],
+        pollResponseOptionIds: selectedPollOptionsByThread.get(thread.id) ?? [],
+      }
+    })
+  } catch (e: unknown) {
+    if (isMissingSchemaError(e)) return []
+    throw e
+  }
+}
+
+export async function getBulletinThread(threadId: string, accessToken?: string): Promise<BulletinThread | null> {
+  const rows = await listBulletinThreads(accessToken)
+  return rows.find((thread) => thread.id === threadId) ?? null
+}
+
+export async function createBulletinThread(input: CreateBulletinThreadInput, accessToken: string) {
+  const inserted = await supabaseFetch<BulletinThreadRow[]>('/rest/v1/bulletin_threads?select=' + BULLETIN_THREAD_FIELDS, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      prefer: 'return=representation',
+    },
+    body: JSON.stringify({
+      title: input.title,
+      body: input.body,
+      thread_type: input.threadType,
+      poll_closes_at: input.pollClosesAt ?? null,
+      event_location: input.eventLocation ?? null,
+      event_starts_at: input.eventStartsAt ?? null,
+      event_ends_at: input.eventEndsAt ?? null,
+    }),
+  }, accessToken)
+
+  const thread = inserted[0]
+  if (!thread) throw new Error('Thread insert did not return a row')
+
+  const tagKeys = [...new Set(input.tagKeys)].slice(0, 2)
+  if (tagKeys.length > 0) {
+    await supabaseFetch('/rest/v1/bulletin_thread_tags', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(tagKeys.map((tagKey) => ({ thread_id: thread.id, tag_key: tagKey }))),
+    }, accessToken)
+  }
+
+  if (input.threadType === 'poll' && input.pollOptions?.length) {
+    await supabaseFetch('/rest/v1/bulletin_poll_options', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input.pollOptions.map((body, position) => ({ thread_id: thread.id, body, position }))),
+    }, accessToken)
+  }
+
+  return thread.id
+}
+
+export async function updateBulletinThread(
+  threadId: string,
+  input: Pick<CreateBulletinThreadInput, 'title' | 'body'>,
+  accessToken: string,
+) {
+  await supabaseFetch(`/rest/v1/bulletin_threads?id=eq.${encodeURIComponent(threadId)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      title: input.title,
+      body: input.body,
+    }),
+  }, accessToken)
+}
+
+export async function deleteBulletinThread(threadId: string, accessToken: string) {
+  await supabaseFetch(`/rest/v1/bulletin_threads?id=eq.${encodeURIComponent(threadId)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+  }, accessToken)
+}
+
+export async function createBulletinComment(
+  threadId: string,
+  body: string,
+  parentId: string | null,
+  accessToken: string,
+) {
+  await supabaseFetch('/rest/v1/bulletin_comments', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ thread_id: threadId, parent_id: parentId, body }),
+  }, accessToken)
+}
+
+export async function updateBulletinComment(commentId: string, body: string, accessToken: string) {
+  await supabaseFetch(`/rest/v1/bulletin_comments?id=eq.${encodeURIComponent(commentId)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ body }),
+  }, accessToken)
+}
+
+export async function deleteBulletinComment(commentId: string, accessToken: string) {
+  await supabaseFetch(`/rest/v1/bulletin_comments?id=eq.${encodeURIComponent(commentId)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+  }, accessToken)
+}
+
+export async function setBulletinThreadVote(threadId: string, value: 1 | -1, accessToken: string) {
+  await supabaseFetch('/rest/v1/bulletin_thread_votes?on_conflict=thread_id,user_id', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({ thread_id: threadId, value }),
+  }, accessToken)
+}
+
+export async function setBulletinCommentVote(commentId: string, value: 1 | -1, accessToken: string) {
+  await supabaseFetch('/rest/v1/bulletin_comment_votes?on_conflict=comment_id,user_id', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({ comment_id: commentId, value }),
+  }, accessToken)
+}
+
+export async function submitBulletinPollResponse(threadId: string, pollOptionIds: string[], accessToken: string) {
+  const selectedOptionIds = [...new Set(pollOptionIds)].filter(Boolean)
+  if (selectedOptionIds.length === 0) throw new Error('Select at least one poll option.')
+
+  const inserted = await supabaseFetch<Array<{ id: string }>>('/rest/v1/bulletin_poll_responses?select=id', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      prefer: 'return=representation',
+    },
+    body: JSON.stringify({ thread_id: threadId }),
+  }, accessToken)
+
+  const responseId = inserted[0]?.id
+  if (!responseId) throw new Error('Poll response insert did not return a row')
+
+  await supabaseFetch('/rest/v1/bulletin_poll_response_options', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(selectedOptionIds.map((optionId) => ({
+      response_id: responseId,
+      poll_option_id: optionId,
+    }))),
+  }, accessToken)
+}
+
+export async function getBulletinPreferences(accessToken?: string): Promise<BulletinBoardPreferences | null> {
+  if (!accessToken) return null
+  const sp = new URLSearchParams()
+  sp.set('select', 'userId:user_id,hiddenTagKeys:hidden_tag_keys,hiddenThreadTypes:hidden_thread_types,sortOrder:sort_order,updatedAt:updated_at')
+  sp.set('limit', '1')
+  try {
+    const rows = await postgrest<BulletinPreferenceRow[]>(`/rest/v1/bulletin_board_preferences?${sp}`, {}, accessToken)
+    const row = rows[0]
+    if (!row) return null
+    return {
+      ...row,
+      hiddenTagKeys: row.hiddenTagKeys ?? [],
+      hiddenThreadTypes: row.hiddenThreadTypes ?? [],
+    }
+  } catch (e: unknown) {
+    if (isMissingSchemaError(e)) return null
+    throw e
+  }
+}
+
+export async function saveBulletinPreferences(
+  preferences: Pick<BulletinBoardPreferences, 'hiddenTagKeys' | 'hiddenThreadTypes' | 'sortOrder'>,
+  accessToken: string,
+) {
+  await supabaseFetch('/rest/v1/bulletin_board_preferences?on_conflict=user_id', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({
+      hidden_tag_keys: preferences.hiddenTagKeys,
+      hidden_thread_types: preferences.hiddenThreadTypes,
+      sort_order: preferences.sortOrder,
+    }),
+  }, accessToken)
 }
 
 // ── Municipal Code ───────────────────────────────────────────────────────────

@@ -48,6 +48,33 @@ export function AppShell({ children }: Props) {
             >
               ASI
             </NavLink>
+            <NavLink
+              to="/officials"
+              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
+            >
+              Civil Servants
+            </NavLink>
+            {/*
+              Education is preserved at /education but hidden while Bulletin Board is the active experience.
+              <NavLink
+                to="/education"
+                className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
+              >
+                Education
+              </NavLink>
+            */}
+            <NavLink
+              to="/bulletin-board"
+              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
+            >
+              Bulletin Board
+            </NavLink>
+            <NavLink
+              to="/municipal-code"
+              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
+            >
+              Municipal Code
+            </NavLink>
 
             {!loading && (
               user ? (
