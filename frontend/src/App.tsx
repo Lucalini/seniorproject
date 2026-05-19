@@ -4,6 +4,8 @@ import { AppShell } from './components/AppShell'
 import { ASICommitteePage } from './pages/ASICommitteePage'
 import { ASIPage } from './pages/ASIPage'
 import { BulletinBoardPage, BulletinThreadPage } from './pages/BulletinBoardPage'
+import { CityCommitteePage } from './pages/CityCommitteePage'
+import { CityPage } from './pages/CityPage'
 import { EducationPage } from './pages/EducationPage'
 import { EventsPage } from './pages/EventsPage'
 import { HomePage } from './pages/HomePage'
@@ -22,6 +24,8 @@ function App() {
         <Route path="/events" element={<EventsPage />} />
         <Route path="/asi" element={<ASIPage />} />
         <Route path="/asi/:committeeKey" element={<ASICommitteePage />} />
+        <Route path="/city" element={<CityPage />} />
+        <Route path="/city/:committeeKey" element={<CityCommitteePage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/:officialId" element={<OfficialDetailPage />} />
         <Route path="/bulletin-board" element={<BulletinBoardPage />} />

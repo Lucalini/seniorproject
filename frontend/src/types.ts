@@ -96,6 +96,15 @@ export type ASICommittee = {
   eventTitleMatchers: string[]
 }
 
+export type CityCommittee = {
+  key: string
+  name: string
+  shortName: string
+  description: string
+  committeeUrl: string
+  eventTitleMatchers: string[]
+}
+
 export type UserProfile = {
   userId: string
   displayName: string | null
