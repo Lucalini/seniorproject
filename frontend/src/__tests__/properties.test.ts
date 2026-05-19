@@ -11,7 +11,6 @@ import {
   filterOccurrencesInWindow,
   dateKey,
   addDays,
-  dateOnlyFromParts,
 } from '../lib/recurrence'
 import { eventMatchesCommittee } from '../lib/eventFiltering'
 import { formatTimeRange } from '../lib/formatTimeRange'
