@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../components/AuthProvider'
+import { useAuth } from '../components/authContext'
 import { ErrorBanner } from '../components/ErrorBanner'
 
 type Tab = 'signin' | 'signup'

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import poliMustang from '../assets/POLIMustang.JPG'
-import { useAuth } from './AuthProvider'
+import { useAuth } from './authContext'
 
 type Props = {
   children: ReactNode
@@ -70,13 +70,6 @@ export function AppShell({ children }: Props) {
             >
               Bulletin Board
             </NavLink>
-            <NavLink
-              to="/municipal-code"
-              className={({ isActive }) => cx('navLink', isActive && 'navLinkActive')}
-            >
-              Municipal Code
-            </NavLink>
-
             {!loading && (
               user ? (
                 <div className="navUser">

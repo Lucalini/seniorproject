@@ -16,7 +16,7 @@ import {
   updateBulletinComment,
   updateBulletinThread,
 } from '../api/poli'
-import { useAuth } from '../components/AuthProvider'
+import { useAuth } from '../components/authContext'
 import { ASI_COMMITTEES } from '../data/asiCommittees'
 import type { BulletinThread } from '../types'
 import { errorMessage } from '../utils/errors'

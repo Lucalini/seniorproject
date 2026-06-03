@@ -10,7 +10,7 @@ import {
   listCodeTree,
   updateOrdinanceDraft,
 } from '../api/poli'
-import { useAuth } from '../components/AuthProvider'
+import { useAuth } from '../components/authContext'
 import type { CodeNode } from '../types'
 import { buildProposedChangesDoc, selectedSectionsInOrder } from '../utils/ordinanceDraft'
 
@@ -177,11 +177,8 @@ export function OrdinanceDraftPage() {
       <div className="stack" style={{ padding: '32px 0' }}>
         <h1 className="pageTitle">Ordinance Draft</h1>
         <p className="pageSubtitle">
-          No sections selected. Choose sections in the Municipal Code, then return here.
+          No ordinance sections are selected yet.
         </p>
-        <Link className="button" to="/municipal-code">
-          Go to Municipal Code
-        </Link>
       </div>
     )
   }

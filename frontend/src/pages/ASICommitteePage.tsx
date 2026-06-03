@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { listCommitteeFollows, listEvents, setCommitteeFollow } from '../api/poli'
-import { useAuth } from '../components/AuthProvider'
+import { useAuth } from '../components/authContext'
 import { EventCalendarSection } from '../components/EventCalendarSection'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { ASI_COMMITTEES, eventMatchesCommitteeTitle } from '../data/asiCommittees'

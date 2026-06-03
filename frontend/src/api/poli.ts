@@ -20,6 +20,7 @@ import type {
   UserProfile,
 } from '../types'
 import { ASI_COMMITTEES } from '../data/asiCommittees'
+import { buildCommitteeMeetingSeeds } from '../data/committeeMeetingSeeds'
 
 const RICH_EVENT_FIELDS = [
   'uuid',
@@ -80,6 +81,28 @@ function normalizeLegacyEvents(events: Event[]) {
   }))
 }
 
+function eventMatchesQuery(event: Event, q: string) {
+  const needle = q.trim().toLowerCase()
+  if (!needle) return true
+  const hay = `${event.title} ${event.address ?? ''} ${event.description ?? ''} ${event.agendaTitle ?? ''} ${event.source ?? ''}`.toLowerCase()
+  return hay.includes(needle)
+}
+
+function seedMissingCommitteeMeetings(events: Event[], params?: { q?: string; limit?: number }) {
+  const seededCommitteeKeys = new Set(
+    events
+      .filter((event) => event.source === 'asi_wordpress' && event.committeeKey)
+      .map((event) => event.committeeKey),
+  )
+  const seedEvents = buildCommitteeMeetingSeeds()
+    .filter((event) => event.committeeKey && !seededCommitteeKeys.has(event.committeeKey))
+    .filter((event) => eventMatchesQuery(event, params?.q ?? ''))
+
+  return [...events, ...seedEvents]
+    .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime())
+    .slice(0, params?.limit ?? undefined)
+}
+
 export function listNews(params?: { q?: string; limit?: number; officialId?: string }) {
   const needle = params?.q?.trim().toLowerCase()
   let items = [...NEWS_SEED]
@@ -105,10 +128,13 @@ export function listEvents(params?: { q?: string; limit?: number }, accessToken?
   const richParams = buildEventParams(params, RICH_EVENT_FIELDS, true)
   return postgrest<Event[]>(`/rest/v1/events?${richParams.toString()}`, {}, accessToken)
     .then(normalizeLegacyEvents)
+    .then((events) => seedMissingCommitteeMeetings(events, params))
     .catch((e: unknown) => {
       if (!isMissingSchemaError(e)) throw e
       const legacyParams = buildEventParams(params, LEGACY_EVENT_FIELDS, false)
-      return postgrest<Event[]>(`/rest/v1/events?${legacyParams.toString()}`, {}, accessToken).then(normalizeLegacyEvents)
+      return postgrest<Event[]>(`/rest/v1/events?${legacyParams.toString()}`, {}, accessToken)
+        .then(normalizeLegacyEvents)
+        .then((events) => seedMissingCommitteeMeetings(events, params))
     })
 }
 
