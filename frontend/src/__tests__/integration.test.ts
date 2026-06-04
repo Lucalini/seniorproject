@@ -84,23 +84,24 @@ describe.skipIf(!canConnect)('Integration Tests (requires network access)', () =
     )
   })
 
-  // --- 6.2: calendar_event_sources has 9 active rows ---
-  describe('6.2 calendar_event_sources active rows', () => {
+  // --- 6.2: calendar_event_sources has 9 active ASI rows ---
+  describe('6.2 ASI calendar_event_sources active rows', () => {
     it(
-      'has exactly 9 active rows with URLs matching ASI_COMMITTEES data',
+      'has exactly 9 active ASI rows with URLs matching ASI_COMMITTEES data',
       { timeout: 30_000 },
       async () => {
-        type SourceRow = { uuid: string; url: string; active: boolean }
+        type SourceRow = { uuid: string; url: string; active: boolean; source_type: string }
 
         const sp = new URLSearchParams()
-        sp.set('select', 'uuid,url,active')
+        sp.set('select', 'uuid,url,active,source_type')
         sp.set('active', 'eq.true')
+        sp.set('source_type', 'eq.asi_wordpress_event')
 
         const rows = await postgrestFetch<SourceRow[]>(
           `/rest/v1/calendar_event_sources?${sp.toString()}`,
         )
 
-        // Verify exactly 9 active rows
+        // Verify exactly 9 active ASI rows
         expect(rows).toHaveLength(9)
 
         // Collect all expected URLs from ASI_COMMITTEES

@@ -39,6 +39,8 @@ const corsHeaders = {
 };
 
 const ASI_SOURCE = "asi_wordpress";
+const CITY_SOURCE = "slo_city_calendar";
+const CITY_CALENDAR_SOURCE_TYPE = "slo_city_government_calendar";
 const DEFAULT_IMAGE_PATH = "events/default.png";
 const DEFAULT_TIME_ZONE = "America/Los_Angeles";
 const DEFAULT_LOOKAHEAD_DAYS = 180;
@@ -275,6 +277,183 @@ function dateKey(date: Date): string {
 
 function compactDateKey(date: Date): string {
   return dateKey(date).replaceAll("-", "");
+}
+
+function monthIndex(monthName: string): number | null {
+  const idx = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ].indexOf(monthName.trim().toLowerCase());
+  return idx >= 0 ? idx + 1 : null;
+}
+
+function calendarMonthFromHtml(html: string): { y: number; m: number } | null {
+  const text = stripHtml(html);
+  const match =
+    text.match(/\bEvent dates for\s+([A-Za-z]+)\s+(\d{4})\b/i) ??
+    text.match(/\b([A-Za-z]+)\s+(\d{4})\b/);
+  if (!match) return null;
+
+  const m = monthIndex(match[1]);
+  const y = Number(match[2]);
+  if (!m || !Number.isFinite(y)) return null;
+  return { y, m };
+}
+
+function cellTextBefore(html: string, index: number): string {
+  const cellStart = Math.max(html.lastIndexOf("<td", index), html.lastIndexOf("<li", index));
+  const start = cellStart >= 0 ? cellStart : Math.max(0, index - 1200);
+  return stripHtml(html.slice(start, index));
+}
+
+function calendarDayBefore(html: string, index: number): number | null {
+  const cleaned = cellTextBefore(html, index)
+    .replace(/\[[^\]]+\]\([^)]+\)/g, " ")
+    .replace(/\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?/gi, " ");
+  const dayMatches = [...cleaned.matchAll(/\b([1-9]|[12]\d|3[01])\b/g)];
+  const day = Number(dayMatches.at(-1)?.[1]);
+  return day || null;
+}
+
+function absoluteUrlMaybe(value: string | null, baseUrl: string): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function calendarEventId(url: string): string {
+  const parsed = new URL(url);
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  const eventIdx = parts.findIndex((part) => part.toLowerCase() === "event");
+  if (eventIdx >= 0 && parts[eventIdx + 1]) return parts[eventIdx + 1];
+  return `${parsed.pathname}${parsed.search}`;
+}
+
+function readerUrlFor(url: string): string {
+  return `https://r.jina.ai/http://${url}`;
+}
+
+async function fetchCityCalendarText(url: string): Promise<{ body: string; finalUrl: string; viaReader: boolean }> {
+  try {
+    const direct = await fetchText(url);
+    return { ...direct, viaReader: false };
+  } catch (err) {
+    if (!/Fetch failed 403\b/.test(err instanceof Error ? err.message : String(err))) throw err;
+  }
+
+  const reader = await fetchText(readerUrlFor(url), "text/plain");
+  return { body: reader.body, finalUrl: url, viaReader: true };
+}
+
+function cityCalendarMonthUrls(baseUrl: string, windowStart: Date, windowEnd: Date): string[] {
+  const urls: string[] = [];
+  for (
+    let d = new Date(Date.UTC(windowStart.getUTCFullYear(), windowStart.getUTCMonth(), 1));
+    sameOrBefore(d, windowEnd);
+    d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))
+  ) {
+    const m = d.getUTCMonth() + 1;
+    const y = d.getUTCFullYear();
+    urls.push(`${baseUrl.replace(/\/$/, "")}/-curm-${m}/-cury-${y}`);
+  }
+  return urls;
+}
+
+type CityCalendarEvent = {
+  externalId: string;
+  sourceUrl: string;
+  title: string;
+  occurrenceDate: Date;
+  startsAt: Date;
+  endsAt: Date;
+  status: "scheduled" | "cancelled";
+};
+
+function parseCityCalendarEvents(
+  html: string,
+  pageUrl: string,
+  timeZone: string,
+  windowStart: Date,
+  windowEnd: Date,
+): CityCalendarEvent[] {
+  const month = calendarMonthFromHtml(html);
+  if (!month) return [];
+
+  const events: CityCalendarEvent[] = [];
+  const seen = new Set<string>();
+
+  function pushEvent(args: { title: string; sourceUrl: string; time: { hour: number; minute: number }; day: number }) {
+    const occurrenceDate = dateOnlyFromParts({ y: month.y, m: month.m, d: args.day });
+    if (!sameOrAfter(occurrenceDate, windowStart) || !sameOrBefore(occurrenceDate, windowEnd)) return;
+
+    const startsAt = occurrenceDateTime(occurrenceDate, args.time, timeZone);
+    const externalId = calendarEventId(args.sourceUrl);
+    const occurrenceKey = compactDateKey(occurrenceDate);
+    const seenKey = `${externalId}:${occurrenceKey}`;
+    if (seen.has(seenKey)) return;
+    seen.add(seenKey);
+
+    events.push({
+      externalId,
+      sourceUrl: args.sourceUrl,
+      title: cleanTitle(args.title) || args.title,
+      occurrenceDate,
+      startsAt,
+      endsAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
+      status: titleIndicatesCancelled(args.title) ? "cancelled" : "scheduled",
+    });
+  }
+
+  const anchorRe = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = anchorRe.exec(html))) {
+    const href = extractAttr(match[1], "href");
+    const sourceUrl = absoluteUrlMaybe(href, pageUrl);
+    const rawTitle = stripHtml(match[2]);
+    if (!sourceUrl || !rawTitle || !/\/Home\/Components\/Calendar\/Event\//i.test(sourceUrl)) continue;
+
+    const before = cellTextBefore(html, match.index);
+    const timeMatch = before.match(/(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)\s*$/i);
+    if (!timeMatch) continue;
+
+    const time = parseTimeParts(timeMatch[1]);
+    if (!time) continue;
+
+    const day = calendarDayBefore(html, match.index);
+    if (!day) continue;
+
+    pushEvent({ title: rawTitle, sourceUrl, time, day });
+  }
+
+  const markdownLinkRe =
+    /(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)\s*\[([^\]]+)\]\((https:\/\/www\.slocity\.org\/Home\/Components\/Calendar\/Event\/[^)\s]+)(?:\s+"[^"]*")?\)/gi;
+  while ((match = markdownLinkRe.exec(html))) {
+    const time = parseTimeParts(match[1]);
+    const rawTitle = stripHtml(match[2]);
+    const sourceUrl = absoluteUrlMaybe(match[3], pageUrl);
+    if (!time || !rawTitle || !sourceUrl) continue;
+
+    const day = calendarDayBefore(html, match.index);
+    if (!day) continue;
+
+    pushEvent({ title: rawTitle, sourceUrl, time, day });
+  }
+
+  return events;
 }
 
 /** Weekday for this calendar Y-M-D in `timeZone` (matches ASI WordPress recurrence repeat_days). */
@@ -636,6 +815,91 @@ Deno.serve(async (req) => {
       }
 
       try {
+        if (source.source_type === CITY_CALENDAR_SOURCE_TYPE) {
+          const cityEvents: CityCalendarEvent[] = [];
+          const fetches = [];
+          for (const calendarUrl of cityCalendarMonthUrls(source.url, windowStart, windowEnd)) {
+            const { body, finalUrl, viaReader } = await fetchCityCalendarText(calendarUrl);
+            const parsedEvents = parseCityCalendarEvents(body, finalUrl, timeZone, windowStart, windowEnd);
+            cityEvents.push(...parsedEvents);
+            fetches.push({ url: calendarUrl, finalUrl, viaReader, parsed: parsedEvents.length });
+          }
+          const coords = coordinatesForAddress(source.default_address, source);
+          const seenCityEvents = new Set<string>();
+
+          for (const cityEvent of cityEvents) {
+            const occurrenceKey = compactDateKey(cityEvent.occurrenceDate);
+            const seenKey = `${cityEvent.externalId}:${occurrenceKey}`;
+            if (seenCityEvents.has(seenKey)) continue;
+            seenCityEvents.add(seenKey);
+
+            sourceResult.fetched += 1;
+            const description = [
+              cityEvent.status === "cancelled" ? "Status: Cancelled" : "",
+              "Imported from the SLO City government meetings calendar.",
+              cityEvent.sourceUrl,
+            ].filter(Boolean).join("\n\n");
+
+            const { error } = await sb.rpc("upsert_imported_event", {
+              p_external_event_uid: `${CITY_SOURCE}:${cityEvent.externalId}:${occurrenceKey}`,
+              p_source: CITY_SOURCE,
+              p_source_url: cityEvent.sourceUrl,
+              p_title: cityEvent.title,
+              p_description: description,
+              p_datetime: cityEvent.startsAt.toISOString(),
+              p_end_datetime: cityEvent.endsAt.toISOString(),
+              p_address: source.default_address,
+              p_latitude: coords.lat,
+              p_longitude: coords.lng,
+              p_image_path: DEFAULT_IMAGE_PATH,
+              p_status: cityEvent.status,
+              p_agenda_url: cityEvent.sourceUrl,
+              p_agenda_title: "City meeting details",
+              p_agenda_text: `City meeting details\n${cityEvent.sourceUrl}`,
+              p_external_updated_at: null,
+              p_committee_key: null,
+              p_source_raw: {
+                sourceName: source.name,
+                sourceUrl: source.url,
+                fetches,
+                calendarEventId: cityEvent.externalId,
+                occurrenceDate: occurrenceKey,
+              },
+            });
+
+            if (error) {
+              errors += 1;
+              sourceResult.error = error.message;
+              continue;
+            }
+
+            upserted += 1;
+            sourceResult.upserted += 1;
+            if (cityEvent.status === "cancelled") {
+              cancelled += 1;
+              sourceResult.cancelled += 1;
+            }
+          }
+
+          if (cityEvents.length === 0) {
+            skipped += 1;
+            sourceResult.skipped += 1;
+          }
+
+          if (source.uuid) {
+            await sb
+              .from("calendar_event_sources")
+              .update({
+                last_success_at: new Date().toISOString(),
+                last_error: sourceResult.error,
+              })
+              .eq("uuid", source.uuid);
+          }
+
+          results.push(sourceResult);
+          continue;
+        }
+
         const { event, apiUrl, finalUrl } = await fetchWpEventFromSource(source.url);
         const acf = (event.acf ?? {}) as Record<string, unknown>;
         const dateTimes = (acf.event_dates_times ?? {}) as Record<string, unknown>;
